@@ -1,5 +1,6 @@
 let deck = [];
 let players = [];
+let roundOrder = [];
 
 function createDeck() {
   let suits = ["spades", "hearts", "clubs", "diamonds"];
@@ -78,7 +79,7 @@ function init() {
   createPlayers();
   createPlayerDOMElems();
   startGame();
-  console.log(deck, players);
+  //console.log(deck, players);
 };
 
 function createPlayerDOMElems() {
@@ -151,25 +152,84 @@ function startBettingRound() {
 
   // player that starts the round of betting
   // this will change based off various things
-  let startingPlayerIndex = 0;
-  let startingPlayer = players[startingPlayerIndex];
-  
-  if(startingPlayer.type == 'ai') {
-    aiBet(startingPlayer);
-  } else {
-    humanBet();
+  let onPlayerIndex = 0;
+  let lastPlayerIndex = onPlayerIndex - 1;
+  if(lastPlayerIndex < 0) {
+    lastPlayerIndex = players.length - 1;
   }
+
+  let firstPlayerInRound = players[onPlayerIndex];
+  let lastPlayerInRound = players[lastPlayerIndex];
+
+  createRoundOrder(onPlayerIndex);
+
+  //console.log(firstPlayerInRound.name);
+  //console.log(lastPlayerInRound.name);
+
+  // since this is the start of the round the active player is the firstPlayerInRound
+  let activePlayer = firstPlayerInRound;
+  
+  startNextPlayerTurn(activePlayer);
 
 };
 
 function aiBet(player) {
   // an ai players betting action
+  console.log('starting ai turn for player ' + player.name)
 
+  endPlayerTurn(player);
 };
 
 function humanBet(player) {
   // the human players betting action
+  console.log('starting human turn for player ' + player.name)
 
+  endPlayerTurn(player);
+};
+
+function endPlayerTurn(player) {
+  // at the end of each players turn check if we are at 
+  // the end of the round or if we need to go to the next player
+  
+  if(player == roundOrder[roundOrder.length - 1]) {
+    console.log('last player in roundOrder has ended their turn')
+  } else {
+    findNextPlayer(player);
+  }
+  
+};
+
+function findNextPlayer(player) {
+  // find the next player in the round
+  let nextPlayer;
+  roundOrder.forEach((thisPlayer, index) => {
+    if(player == thisPlayer) {
+      nextPlayer = roundOrder[index + 1];
+    }
+  });
+
+  startNextPlayerTurn(nextPlayer);
+
+};
+
+function startNextPlayerTurn(player) {
+  if(player.type == 'ai') {
+    aiBet(player);
+  } else {
+    humanBet(player);
+  }
+};
+
+function endOfRound() {
+  console.log('end of betting round');
+};
+
+function createRoundOrder(startingIndex) {
+  // reorder the players array into the correct order for this betting round
+  
+  let start = players.slice(startingIndex);
+  let end = players.slice(0,startingIndex);
+  roundOrder = start.concat(end);
 };
 
 init();
