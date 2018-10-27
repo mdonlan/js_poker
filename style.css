@@ -1,7 +1,105 @@
+:root {
+  /* global scope css vars */
+  --playerSize: 10%; 
+}
+
 html, body {
   height: 100%;
   width: 100%;
   margin: 0px;
   background: #222222;
   color: #dddddd;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.wrapper {
+  height: 75%;
+  width: 75%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.game {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+}
+
+/* players */
+
+.player_container {
+  height: 100%;
+  width: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: rgb(134, 34, 34);
+}
+
+.player {
+  width: var(--playerSize);
+  height: 10%;
+  background: #444444;
+}
+
+.player0 {
+  position: absolute;
+  top: calc(80%);
+}
+
+.player1 {
+  position: absolute;
+  top: calc(60%);
+  left: calc(40% - 10%);
+}
+
+.player2 {
+  position: absolute;
+  top: calc(30%);
+  left: calc(40% - 10%);
+}
+
+.player3 {
+  position: absolute;
+  top: var(--playerSize);
+}
+
+.player4 {
+  position: absolute;
+  top: calc(60%);
+  left: calc(60%);
+}
+
+.player5 {
+  position: absolute;
+  top: calc(30%);
+  left: calc(60%);
+}
+
+/* human betting buttons */
+
+.bet_options {
+  position: absolute;
+  background: red;
+  width: 40%;
+  left: calc(50% - 20%);
+  display: flex;
+  justify-content: space-around;
+}
+
+.bet_button {
+  background: #111111;
+  width: 20%;
+  text-align: center;
+}
+
+.bet_button:hover {
+  background: #666666;
 }

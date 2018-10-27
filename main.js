@@ -1,6 +1,9 @@
+
 let deck = [];
 let players = [];
 let roundOrder = [];
+let humanPlayer;
+let handStatus;
 
 function createDeck() {
   let suits = ["spades", "hearts", "clubs", "diamonds"];
@@ -52,7 +55,14 @@ function createPlayers() {
     }
     players.push(player);
   }
+
+  setHumanPlayer();
 };
+
+function setHumanPlayer() {
+  // set the global humanPlayer var
+  humanPlayer = players[0];
+}
 
 function startGame() {
   // after running the initial setup start the game
@@ -90,7 +100,7 @@ function createPlayerDOMElems() {
 
     // create player elem
     let playerElem = document.createElement("div");
-    playerElem.className = player.name;
+    playerElem.classList += 'player ' + player.name;
     playerContainerElem.appendChild(playerElem);
 
     // create player name elem
@@ -108,11 +118,47 @@ function createPlayerDOMElems() {
 };
 
 function dealHand() {
+  setDefaultHandStatus();
   players.forEach((player) => {
     dealCards(player, 2);
   });
 
   updatePlayerCards();
+};
+
+function setDefaultHandStatus() {
+  handStatus = {
+    onPhase: "preflop",
+    deal: {
+      started: false,
+      inProgress: false,
+    },
+    preflop: {
+      started: false,
+      inProgress: false,
+      bettingComplete: false,
+    },
+    flop: {
+      started: false,
+      inProgress: false,
+      bettingComplete: false,
+    },
+    turn: {
+      started: false,
+      inProgress: false,
+      bettingComplete: false,
+    },
+    river: {
+      started: false,
+      inProgress: false,
+      bettingComplete: false,
+    },
+    showdown: {
+      started: false,
+      inProgress: false,
+      bettingComplete: false,
+    }
+  };
 };
 
 function dealCards(player, numCardsToDeal) {
@@ -173,30 +219,46 @@ function startBettingRound() {
 
 };
 
-function aiBet(player) {
+function aiTurn(player) {
   // an ai players betting action
   console.log('starting ai turn for player ' + player.name)
 
-  endPlayerTurn(player);
+  endTurn(player);
 };
 
-function humanBet(player) {
+function humanTurn(player) {
   // the human players betting action
   console.log('starting human turn for player ' + player.name)
-
-  endPlayerTurn(player);
+  toggleBetHumanOptions("show");
+  //endTurn(player);
 };
 
-function endPlayerTurn(player) {
-  // at the end of each players turn check if we are at 
-  // the end of the round or if we need to go to the next player
+function endTurn(player) {
+  // do end of turn logic here
+
+  if(player.type == "human") {
+    toggleBetHumanOptions("hide");
+  }
+
+  let roundComplete = checkIfRoundComplete(player);
   
-  if(player == roundOrder[roundOrder.length - 1]) {
-    console.log('last player in roundOrder has ended their turn')
+  if(roundComplete) {
+    endOfRound();
   } else {
     findNextPlayer(player);
   }
+};
+
+function checkIfRoundComplete(player) {
+
+  // check if this was the last player in the round
   
+  if(player == roundOrder[roundOrder.length - 1]) {
+    console.log('last player in roundOrder has ended their turn')
+    return true;
+  } 
+  return false;
+
 };
 
 function findNextPlayer(player) {
@@ -214,14 +276,42 @@ function findNextPlayer(player) {
 
 function startNextPlayerTurn(player) {
   if(player.type == 'ai') {
-    aiBet(player);
+    aiTurn(player);
   } else {
-    humanBet(player);
+    humanTurn(player);
   }
 };
 
 function endOfRound() {
-  console.log('end of betting round');
+  // the current betting round has ended, move on to the next betting round / determine winner
+  
+  switch(handStatus.onPhase) {
+    case "preflop":
+      console.log('preflop phase has ended');
+      handStatus.onPhase = "flop";
+      startBettingRound();
+      break;
+    case "flop":
+      console.log('flop phase has ended');
+      handStatus.onPhase = "turn";
+      startBettingRound();
+      break; 
+    case "turn":
+      console.log('flop phase has ended');
+      handStatus.onPhase = "turn";
+      startBettingRound();
+      break;   
+    case "river":
+      console.log('flop phase has ended');
+      handStatus.onPhase = "turn";
+      startBettingRound();
+      break; 
+    case "showdown":
+      console.log('flop phase has ended');
+      handStatus.onPhase = "turn";
+      startBettingRound();
+      break;   
+  }
 };
 
 function createRoundOrder(startingIndex) {
@@ -230,6 +320,33 @@ function createRoundOrder(startingIndex) {
   let start = players.slice(startingIndex);
   let end = players.slice(0,startingIndex);
   roundOrder = start.concat(end);
+};
+
+function toggleBetHumanOptions(status) {
+  let betOptionsElem = document.querySelector(".bet_options");
+  if(status == "show") {
+    betOptionsElem.style.display = "flex";
+  } else {
+    betOptionsElem.style.display = "none";
+  }
+};
+
+function humanCheck() {
+  console.log("human checked");
+
+  endTurn(humanPlayer);
+};
+
+function humanBet() {
+  console.log("human bet");
+
+  endTurn(humanPlayer);
+};
+
+function humanFold() {
+  console.log("human fold");
+
+  endTurn(humanPlayer);
 };
 
 init();
