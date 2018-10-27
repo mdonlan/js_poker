@@ -103,3 +103,22 @@ html, body {
 .bet_button:hover {
   background: #666666;
 }
+
+/* community cards */
+
+.community_cards {
+  height: 10%;
+  width: 10%;
+  background: orangered;
+  position: absolute;
+  top: calc(50% - 5%);
+  left: calc(50% - 5%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.community_card {
+  margin-left: 10px;
+  margin-right: 10px;
+}

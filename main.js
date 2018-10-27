@@ -4,6 +4,7 @@ let players = [];
 let roundOrder = [];
 let humanPlayer;
 let handStatus;
+let communityCards = [];
 
 function createDeck() {
   let suits = ["spades", "hearts", "clubs", "diamonds"];
@@ -51,7 +52,8 @@ function createPlayers() {
       hand: [],
       money: 1000,
       name: "player" + i,
-      type: type
+      type: type,
+      roundBet: 0 // the ammount this player has bet so far this round
     }
     players.push(player);
   }
@@ -87,7 +89,7 @@ function startGame() {
 function init() {
   createDeck();
   createPlayers();
-  createPlayerDOMElems();
+  //createPlayerDOMElems();
   startGame();
   //console.log(deck, players);
 };
@@ -123,7 +125,7 @@ function dealHand() {
     dealCards(player, 2);
   });
 
-  updatePlayerCards();
+  updatePlayerCardElems();
 };
 
 function setDefaultHandStatus() {
@@ -172,7 +174,7 @@ function dealCards(player, numCardsToDeal) {
   }
 };
 
-function updatePlayerCards() {
+function updatePlayerCardElems() {
   // after dealing update the DOM elems to show the players cards
 
   players.forEach((player) => {
@@ -193,7 +195,37 @@ function updatePlayerCards() {
   });
 };
 
+function updateCommunityCards() {
+  switch(handStatus.onPhase) {
+    case "preflop":
+      break;
+    case "flop":
+      dealCommunityCards(3);
+      break;
+    case "turn":
+      dealCommunityCards(1);
+      break;
+    case "river":
+      dealCommunityCards(1);
+      break;
+  }
+
+  updateCommunityCardElems();
+};
+
+function dealCommunityCards(numToDeal) {
+  let cardsDelt = 0;
+  while(cardsDelt < numToDeal) {
+    cardsDelt++;
+    let cardPosInDeck = Math.floor(Math.random() * deck.length);
+    let card = deck[cardPosInDeck];
+    communityCards.push(card);
+    deck.splice(cardPosInDeck, 1);
+  }
+};
+
 function startBettingRound() {
+  console.log('starting the ' + handStatus.onPhase + " round");
   // starts the round of betting with whichever player is supposed to open the betting
 
   // player that starts the round of betting
@@ -214,9 +246,28 @@ function startBettingRound() {
 
   // since this is the start of the round the active player is the firstPlayerInRound
   let activePlayer = firstPlayerInRound;
+
+  // check if we need to deal out any community cards to start the round
+  updateCommunityCards();
   
   startNextPlayerTurn(activePlayer);
 
+};
+
+function updateCommunityCardElems() {
+  // after dealing update the DOM elems to show the community cards
+
+  let communityCardsElem = document.querySelector(".community_cards");
+  communityCardsArr = Array.from(communityCardsElem.children);
+
+  communityCardsArr.forEach((cardElem, index) => {
+    communityCards.forEach((card, i) => {
+      if(i == index) {
+        // matched the correct elem index to the array of cards index
+        cardElem.innerHTML = card.value + card.suit;
+      }
+    })
+  });
 };
 
 function aiTurn(player) {
@@ -297,20 +348,19 @@ function endOfRound() {
       startBettingRound();
       break; 
     case "turn":
-      console.log('flop phase has ended');
-      handStatus.onPhase = "turn";
+      console.log('turn phase has ended');
+      handStatus.onPhase = "river";
       startBettingRound();
       break;   
     case "river":
-      console.log('flop phase has ended');
-      handStatus.onPhase = "turn";
-      startBettingRound();
+      console.log('river phase has ended');
+      handStatus.onPhase = "showdown";
+      //startBettingRound();
       break; 
     case "showdown":
-      console.log('flop phase has ended');
-      handStatus.onPhase = "turn";
-      startBettingRound();
-      break;   
+      console.log('showdown phase has ended and the hand has ended');
+      
+      break;  
   }
 };
 
