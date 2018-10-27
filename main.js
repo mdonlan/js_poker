@@ -87,11 +87,20 @@ function startGame() {
 };
 
 function init() {
+  addEventListeners();
   createDeck();
   createPlayers();
   //createPlayerDOMElems();
   startGame();
   //console.log(deck, players);
+};
+
+function addEventListeners() {
+  // add any nessesary event listeners
+
+  // content editable onChange listener
+  let elem = document.querySelector('.bet_amount');
+  elem.addEventListener('keypress', betAmountHandler);
 };
 
 function createPlayerDOMElems() {
@@ -280,7 +289,7 @@ function aiTurn(player) {
 function humanTurn(player) {
   // the human players betting action
   console.log('starting human turn for player ' + player.name)
-  toggleBetHumanOptions("show");
+  toggleBetHumanOptions();
   //endTurn(player);
 };
 
@@ -288,7 +297,7 @@ function endTurn(player) {
   // do end of turn logic here
 
   if(player.type == "human") {
-    toggleBetHumanOptions("hide");
+    toggleBetHumanOptions();
   }
 
   let roundComplete = checkIfRoundComplete(player);
@@ -372,13 +381,9 @@ function createRoundOrder(startingIndex) {
   roundOrder = start.concat(end);
 };
 
-function toggleBetHumanOptions(status) {
+function toggleBetHumanOptions() {
   let betOptionsElem = document.querySelector(".bet_options");
-  if(status == "show") {
-    betOptionsElem.style.display = "flex";
-  } else {
-    betOptionsElem.style.display = "none";
-  }
+  betOptionsElem.classList.toggle("bet_options_show");
 };
 
 function humanCheck() {
@@ -397,6 +402,54 @@ function humanFold() {
   console.log("human fold");
 
   endTurn(humanPlayer);
+};
+
+function betAmountHandler(e) {
+  // handles input from the bet_amount elem
+
+  console.log(e);
+
+  // make sure the most recent input is a number and is <= current players money
+  if(e.keyCode >= 48 && e.keyCode <= 57){
+    // if entered a number
+
+    // get temp bet amount
+    let newInput = e.key;
+    let oldBetAmount = e.target.innerHTML;
+    let tempBetAmount = oldBetAmount + newInput;
+
+    let validBet = checkValidBet(tempBetAmount);
+    // if the bet is too high, set to players max money
+    if(!validBet) {
+      console.log('not a valid bet')
+      e.preventDefault();
+
+      // set to player max bet
+      let maxBet = players[0].money;
+      console.log(maxBet)
+      e.target.innerHTML = maxBet;
+    }
+  } else {
+    e.preventDefault();
+  }
+
+};
+
+function checkValidBet(tempBetAmount) {
+  // make sure the human player has entered a valid bet that is <= their money
+
+  if(tempBetAmount <= players[0].money) {
+    return true;
+  } else {
+    return false;
+  }
+};
+
+function setToMaxBet() {
+  // the amount entered in betAmount was too high, setting to the max possible bet
+  console.log('setting to max bet');
+
+  let maxBet = players[0].money;
 };
 
 init();

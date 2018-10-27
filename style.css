@@ -28,6 +28,7 @@ html, body {
   position: absolute;
   height: 100%;
   width: 100%;
+  background: rgb(20, 87, 117);
 }
 
 /* players */
@@ -40,13 +41,22 @@ html, body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background: rgb(134, 34, 34);
+  z-index: 2;
+  user-select: none;
 }
 
 .player {
   width: var(--playerSize);
   height: 10%;
   background: #444444;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.player_name {
+  text-decoration: underline;
 }
 
 .player0 {
@@ -89,19 +99,40 @@ html, body {
   position: absolute;
   background: red;
   width: 40%;
+  height: 40px;
   left: calc(50% - 20%);
+  margin-top: -40px;
   display: flex;
   justify-content: space-around;
+}
+
+.bet_options_show {
+  margin-top: 0%;
 }
 
 .bet_button {
   background: #111111;
   width: 20%;
   text-align: center;
+  user-select: none;
+  cursor: pointer;
 }
 
 .bet_button:hover {
   background: #666666;
+}
+
+/* set the content editable to use the html placeholder value for the bet_amount element */
+[contenteditable=true]:empty:before{
+  content: attr(placeholder);
+  color: #666666a2
+}
+
+.bet_amount {
+  background: #111111;
+  width: 20%;
+  text-align: center;
+  color: #dddddd;
 }
 
 /* community cards */
