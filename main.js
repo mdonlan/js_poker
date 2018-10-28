@@ -581,15 +581,15 @@ function rankAiHand(player) {
   let hand = player.hand;
   hand = hand.concat(communityCards);
 
-  isRoyalFlush(hand);
+  //sRoyalFlush(hand);
   //isStraighFlush(hand);
   //isFourOfKind(hand);
   //isFullHouse(hand)
   //isFlush(hand);
- //isStraight(hand);
+  //isStraight(hand);
   //isThreeOfKind(hand);
   //isTwoPair(hand);
-  //isPair(hand);
+  isPair(hand);
   //isHighCard(hand);
 
 };
@@ -633,6 +633,8 @@ function isRoyalFlush(hand) {
 
 function isStraighFlush(hand) {
   console.log('checking if hand is a StraighFlush');
+
+  // difference between straigh flush and royal flush
 };
 
 function isFourOfKind(hand) {
@@ -661,10 +663,29 @@ function isTwoPair(hand) {
 
 function isPair(hand) {
   console.log('checking if hand is a Pair');
+
+  // for finding a pair we only need to compare the numbers so create
+  // an array of only the hand values
+
+  let values = [];
+  hand.forEach((card) => {
+    values.push(card.value);
+  });
+
+  let pair = values.find((value, index) => (values.indexOf(value) != index));
+  
+  if(pair) {
+    console.log("pair: " + pair);
+  }
+
 };
 
 function isHighCard(hand) {
   console.log('checking if hand is a HighCard');
+
+  hand = sortCards(hand);
+  console.log(hand);
+
 };
 
 function sortCards(hand) {
@@ -685,7 +706,6 @@ function removeDuplicateValues(hand) {
       newHand.forEach((newHandCard) => {
         if(card.value == newHandCard.value) {
           isDupe = true;
-          console.log('found and removed a dupe');
         }
       });
       

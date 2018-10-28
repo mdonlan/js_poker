@@ -140,7 +140,7 @@ html, body {
 .community_cards {
   height: 10%;
   width: 10%;
-  background: orangered;
+  background: rgba(255, 68, 0, 0.562);
   position: absolute;
   top: calc(50% - 5%);
   left: calc(50% - 5%);
