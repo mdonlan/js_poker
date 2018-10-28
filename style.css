@@ -41,7 +41,6 @@ html, body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  z-index: 2;
   user-select: none;
 }
 
@@ -61,61 +60,68 @@ html, body {
 
 .player0 {
   position: absolute;
-  top: calc(80%);
+  top: calc(90% - 5%);
 }
 
 .player1 {
   position: absolute;
   top: calc(60%);
-  left: calc(40% - 10%);
+  left: calc(20%);
 }
 
 .player2 {
   position: absolute;
   top: calc(30%);
-  left: calc(40% - 10%);
+  left: calc(20%);
 }
 
 .player3 {
   position: absolute;
-  top: var(--playerSize);
+  top: 5%;
 }
 
 .player4 {
   position: absolute;
   top: calc(60%);
-  left: calc(60%);
+  left: calc(80% - 10%);
 }
 
 .player5 {
   position: absolute;
   top: calc(30%);
-  left: calc(60%);
+  left: calc(80% - 10%);
 }
 
 /* human betting buttons */
 
 .bet_options {
   position: absolute;
-  background: red;
+  background: #111111;
   width: 40%;
-  height: 40px;
+  height: 50px;
   left: calc(50% - 20%);
-  margin-top: -40px;
+  margin-top: -50px;
   display: flex;
   justify-content: space-around;
+  align-items: center;
+  opacity: .99;
+  z-index: -1;
 }
 
 .bet_options_show {
   margin-top: 0%;
+  z-index: 0;
 }
 
 .bet_button {
-  background: #111111;
+  background: #222222;
+  height: 30px;
   width: 20%;
-  text-align: center;
   user-select: none;
   cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .bet_button:hover {
@@ -125,31 +131,40 @@ html, body {
 /* set the content editable to use the html placeholder value for the bet_amount element */
 [contenteditable=true]:empty:before{
   content: attr(placeholder);
-  color: #666666a2
+  color: #666666a2;
 }
 
 .bet_amount {
-  background: #111111;
+  background: #222222;
+  height: 30px;
   width: 20%;
-  text-align: center;
+  user-select: none;
+  cursor: pointer;
+  display: inline-block; /* need to do this to prevent cursor position issue */
   color: #dddddd;
+  outline: none;
+  border:none;
+  line-height: 30px;
+  text-align: center;
 }
 
 /* community cards */
 
 .community_cards {
-  height: 10%;
-  width: 10%;
-  background: rgba(255, 68, 0, 0.562);
+  height: 30%;
+  width: 30%;
+  background: rgb(8, 51, 31);
   position: absolute;
-  top: calc(50% - 5%);
-  left: calc(50% - 5%);
+  top: calc(50% - 15%);
+  left: calc(50% - 15%);
   display: flex;
-  justify-content: center;
+  justify-content: space-around;
   align-items: center;
 }
 
 .community_card {
-  margin-left: 10px;
-  margin-right: 10px;
+  width: 15%;
+  overflow: hidden;
+  background: #111111;
+  text-align: center;
 }

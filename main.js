@@ -303,6 +303,7 @@ function humanTurn(player) {
   //console.log('starting human turn for player ' + player.name);
   toggleBetHumanOptions();
   betOrCall();
+
 };
 
 function betOrCall() {
