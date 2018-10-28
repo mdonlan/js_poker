@@ -5,6 +5,9 @@ let roundOrder = [];
 let humanPlayer;
 let handStatus;
 let communityCards = [];
+let roundBetAmount = 0;
+let activePlayer;
+let startingPlayerIndex = 0;
 
 function createDeck() {
   let suits = ["spades", "hearts", "clubs", "diamonds"];
@@ -100,7 +103,7 @@ function addEventListeners() {
 
   // content editable onChange listener
   let elem = document.querySelector('.bet_amount');
-  elem.addEventListener('keypress', betAmountHandler);
+  elem.addEventListener('keypress', betInputHandler);
 };
 
 function createPlayerDOMElems() {
@@ -239,7 +242,7 @@ function startBettingRound() {
 
   // player that starts the round of betting
   // this will change based off various things
-  let onPlayerIndex = 0;
+  let onPlayerIndex = startingPlayerIndex;
   let lastPlayerIndex = onPlayerIndex - 1;
   if(lastPlayerIndex < 0) {
     lastPlayerIndex = players.length - 1;
@@ -254,7 +257,7 @@ function startBettingRound() {
   //console.log(lastPlayerInRound.name);
 
   // since this is the start of the round the active player is the firstPlayerInRound
-  let activePlayer = firstPlayerInRound;
+  activePlayer = firstPlayerInRound;
 
   // check if we need to deal out any community cards to start the round
   updateCommunityCards();
@@ -283,30 +286,63 @@ function aiTurn(player) {
   // an ai players betting action
   console.log('starting ai turn for player ' + player.name)
 
-  endTurn(player);
+  endTurn(player, false);
 };
 
 function humanTurn(player) {
   // the human players betting action
   console.log('starting human turn for player ' + player.name)
   toggleBetHumanOptions();
-  //endTurn(player);
+  betOrCall();
 };
 
-function endTurn(player) {
+function betOrCall() {
+  // set the player bet/call element to show bet or call depending on if the roundBet is > 0
+  // also set the min bet ammount if it is call
+
+  let betElem = document.querySelector(".bet");
+
+  if(roundBetAmount > 0) {
+    betElem.innerHTML = "Call";
+    setBetAmountToMin();
+  } else {
+    betElem.innerHTML = "Bet";
+  }
+
+};
+
+function setBetAmountToMin() {
+  // if there is a round bet already when its the players turn
+  // set the betAmount to the min possible to match call
+  let betAmountElem = document.querySelector(".bet_amount");
+  betAmountElem.innerHTML = roundBetAmount;
+};
+
+function endTurn(player, newBetHasBeenPlaced) {
   // do end of turn logic here
 
   if(player.type == "human") {
     toggleBetHumanOptions();
   }
 
-  let roundComplete = checkIfRoundComplete(player);
-  
-  if(roundComplete) {
-    endOfRound();
-  } else {
-    findNextPlayer(player);
+  // if a new bet has been placed then reset the round order
+  if(newBetHasBeenPlaced) {
+    setNewRoundOrderAfterBet(player);
+  } else { // if no new bet then continue the round as normal
+    let roundComplete = checkIfRoundComplete(player);
+
+    if(roundComplete) {
+      endOfRound();
+    } else {
+      // if not the end of round then move on to the next player
+      let nextPlayer = findNextPlayer(player);
+      startNextPlayerTurn(nextPlayer);
+    }
   }
+
+  
+  
+  
 };
 
 function checkIfRoundComplete(player) {
@@ -330,7 +366,7 @@ function findNextPlayer(player) {
     }
   });
 
-  startNextPlayerTurn(nextPlayer);
+  return nextPlayer;
 
 };
 
@@ -383,28 +419,39 @@ function createRoundOrder(startingIndex) {
 
 function toggleBetHumanOptions() {
   let betOptionsElem = document.querySelector(".bet_options");
-  betOptionsElem.classList.toggle("bet_options_show");
+  betOptionsElem.classList.toggle("bet_options_show"); 
 };
 
 function humanCheck() {
   console.log("human checked");
 
-  endTurn(humanPlayer);
+  endTurn(humanPlayer, false);
 };
 
 function humanBet() {
   console.log("human bet");
 
-  endTurn(humanPlayer);
+  // get the amount that was entered for the bet
+  let betAmountElem = document.querySelector(".bet_amount");
+  let betAmount = betAmountElem.innerHTML;
+  
+  // only accept the click if the betAmount is > 0 >= roundbetAmount
+  if(betAmount > 0 && betAmount >= roundBetAmount) {
+    betPlaced(betAmount);
+    endTurn(humanPlayer, true);  
+  } else {
+    console.log('player tried to bet zero, or less than the roundBetAmount')
+  }
+
 };
 
 function humanFold() {
   console.log("human fold");
 
-  endTurn(humanPlayer);
+  endTurn(humanPlayer, false);
 };
 
-function betAmountHandler(e) {
+function betInputHandler(e) {
   // handles input from the bet_amount elem
 
   console.log(e);
@@ -419,26 +466,32 @@ function betAmountHandler(e) {
     let tempBetAmount = oldBetAmount + newInput;
 
     let validBet = checkValidBet(tempBetAmount);
-    // if the bet is too high, set to players max money
-    if(!validBet) {
-      console.log('not a valid bet')
-      e.preventDefault();
 
-      // set to player max bet
-      let maxBet = players[0].money;
-      console.log(maxBet)
-      e.target.innerHTML = maxBet;
+    // if not a valid bet, adjust it to min or max
+    if(!validBet) {
+      console.log('not a valid bet');
+
+      if(tempBetAmount < roundBetAmount) {
+        setBetAmountToMin();
+        e.preventDefault(); // prevent newest input if less than minBet
+      } else {
+        // set to player max bet
+        let maxBet = players[0].money;
+        console.log(maxBet)
+        e.target.innerHTML = maxBet;
+        e.preventDefault(); // prevent newest input if more than player money
+      }
     }
   } else {
-    e.preventDefault();
+    e.preventDefault(); // prevent entering on newest input if not a number
   }
 
 };
 
 function checkValidBet(tempBetAmount) {
-  // make sure the human player has entered a valid bet that is <= their money
+  // make sure the human player has entered a valid bet that is <= their money && >= minBet
 
-  if(tempBetAmount <= players[0].money) {
+  if(tempBetAmount <= players[0].money && tempBetAmount > roundBetAmount) {
     return true;
   } else {
     return false;
@@ -450,6 +503,69 @@ function setToMaxBet() {
   console.log('setting to max bet');
 
   let maxBet = players[0].money;
+};
+
+function betPlaced(betAmount) {
+  console.log("bet placed for " + betAmount);
+  // a new valid (is this checked???) bet has been placed
+  // update the roundBetAmount and restart the round order starting at the bet makers index + 1
+
+  roundBetAmount = betAmount;
+
+  console.log("new roundBetAmount: " + roundBetAmount);
+
+  // find the next player and start a new round of betting w/ them
+  //let nextPlayer = findNextPlayer(activePlayer);
+
+  // get their index and set it to the startingPlayerIndex
+  // this is used for the next round to determine where the betting should start
+  // we want betting to start on the last player to bet
+
+  //let nextPlayerIndex = getPlayerRoundIndex(nextPlayer);
+  //startingPlayerIndex = nextPlayerIndex;
+  //activePlayer = nextPlayer;
+
+  // create the new round order
+  //createRoundOrder(startingPlayerIndex);  
+  //startNextPlayerTurn(activePlayer);
+
+};
+
+function setNewRoundOrderAfterBet(player) {
+  //restart the round order starting at the bet makers index + 1
+  //find the next player and start a new round of betting w/ them
+  
+  let nextPlayer = findNextPlayer(player);
+
+  // get their index and set it to the startingPlayerIndex
+  // this is used for the next round to determine where the betting should start
+  // we want betting to start on the last player to bet
+
+  let nextPlayerIndex = getPlayerRoundIndex(nextPlayer);
+  startingPlayerIndex = nextPlayerIndex;
+  activePlayer = nextPlayer;
+
+  // create the new round order
+  createRoundOrder(startingPlayerIndex);  
+
+  // since the current player has already bet we need to remove them from the end of the round
+  roundOrder = roundOrder.slice(0, roundOrder.length-1);
+
+  startNextPlayerTurn(activePlayer);
+};
+
+function getPlayerRoundIndex(player) {
+  // find what round index a player has
+
+  let roundIndex;
+  roundOrder.forEach((thisPlayer, index) => {
+    if(player == thisPlayer) {
+      roundIndex = index;
+    }
+  });
+  
+  return roundIndex;
+
 };
 
 init();

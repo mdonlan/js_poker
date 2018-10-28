@@ -1,9 +1,6 @@
 todo:
 
--only show correct player bet buttons
-  -don't show check if there is a bet set this round
+- only show correct player bet buttons
+  - don't show check if there is a bet set this round
+  - show bet/call
 
--animate the player bet buttons
-
--remove all hiding of player bet buttons and just disable them to prevent random clicks when not players turn
-  -since the ai turns all go fast it wil almost always be the players turn, no need to hide the buttons
