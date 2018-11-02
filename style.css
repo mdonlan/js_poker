@@ -82,13 +82,13 @@ html, body {
 
 .player4 {
   position: absolute;
-  top: calc(60%);
+  top: calc(30%);
   left: calc(80% - 10%);
 }
 
 .player5 {
   position: absolute;
-  top: calc(30%);
+  top: calc(60%);
   left: calc(80% - 10%);
 }
 

@@ -9,6 +9,8 @@ let roundBetAmount = 0;
 let activePlayer;
 let startingPlayerIndex = 0;
 
+let log = console.log;
+
 function createDeck() {
   let suits = ["spades", "hearts", "clubs", "diamonds"];
   let value = 2;
@@ -95,7 +97,7 @@ function init() {
   createPlayers();
   //createPlayerDOMElems();
   startGame();
-  //console.log(deck, players);
+  //log(deck, players);
 };
 
 function addEventListeners() {
@@ -237,7 +239,7 @@ function dealCommunityCards(numToDeal) {
 };
 
 function startBettingRound() {
-  //console.log('starting the ' + handStatus.onPhase + " round");
+  //log('starting the ' + handStatus.onPhase + " round");
   // starts the round of betting with whichever player is supposed to open the betting
 
   // player that starts the round of betting
@@ -253,8 +255,8 @@ function startBettingRound() {
 
   createRoundOrder(onPlayerIndex);
 
-  //console.log(firstPlayerInRound.name);
-  //console.log(lastPlayerInRound.name);
+  //log(firstPlayerInRound.name);
+  //log(lastPlayerInRound.name);
 
   // since this is the start of the round the active player is the firstPlayerInRound
   activePlayer = firstPlayerInRound;
@@ -284,7 +286,7 @@ function updateCommunityCardElems() {
 
 function aiTurn(player) {
   // an ai players betting action
-  //console.log('starting ai turn for player ' + player.name);
+  //log('starting ai turn for player ' + player.name);
 
   // do ai turn logic here
 
@@ -300,7 +302,7 @@ function aiTurn(player) {
 
 function humanTurn(player) {
   // the human players betting action
-  //console.log('starting human turn for player ' + player.name);
+  //log('starting human turn for player ' + player.name);
   toggleBetHumanOptions();
   betOrCall();
 
@@ -360,7 +362,7 @@ function checkIfRoundComplete(player) {
   // check if this was the last player in the round
   
   if(player == roundOrder[roundOrder.length - 1]) {
-    //console.log('last player in roundOrder has ended their turn')
+    //log('last player in roundOrder has ended their turn')
     return true;
   } 
   return false;
@@ -393,27 +395,27 @@ function endOfRound() {
   
   switch(handStatus.onPhase) {
     case "preflop":
-      //console.log('preflop phase has ended');
+      //log('preflop phase has ended');
       handStatus.onPhase = "flop";
       startBettingRound();
       break;
     case "flop":
-      //console.log('flop phase has ended');
+      //log('flop phase has ended');
       handStatus.onPhase = "turn";
       startBettingRound();
       break; 
     case "turn":
-      //console.log('turn phase has ended');
+      //log('turn phase has ended');
       handStatus.onPhase = "river";
       startBettingRound();
       break;   
     case "river":
-      //console.log('river phase has ended');
+      //log('river phase has ended');
       handStatus.onPhase = "showdown";
       //startBettingRound();
       break; 
     case "showdown":
-      //console.log('showdown phase has ended and the hand has ended');
+      //log('showdown phase has ended and the hand has ended');
       
       break;  
   }
@@ -433,13 +435,13 @@ function toggleBetHumanOptions() {
 };
 
 function humanCheck() {
-  //console.log("human checked");
+  //log("human checked");
 
   endTurn(humanPlayer, false);
 };
 
 function humanBet() {
-  //console.log("human bet");
+  //log("human bet");
 
   // get the amount that was entered for the bet
   let betAmountElem = document.querySelector(".bet_amount");
@@ -450,13 +452,13 @@ function humanBet() {
     betPlaced(betAmount);
     endTurn(humanPlayer, true);  
   } else {
-    //console.log('player tried to bet zero, or less than the roundBetAmount')
+    //log('player tried to bet zero, or less than the roundBetAmount')
   }
 
 };
 
 function humanFold() {
-  //console.log("human fold");
+  //log("human fold");
 
   endTurn(humanPlayer, false);
 };
@@ -464,7 +466,7 @@ function humanFold() {
 function betInputHandler(e) {
   // handles input from the bet_amount elem
 
-  //console.log(e);
+  //log(e);
 
   // make sure the most recent input is a number and is <= current players money
   if(e.keyCode >= 48 && e.keyCode <= 57){
@@ -479,7 +481,7 @@ function betInputHandler(e) {
 
     // if not a valid bet, adjust it to min or max
     if(!validBet) {
-      //console.log('not a valid bet');
+      //log('not a valid bet');
 
       if(tempBetAmount < roundBetAmount) {
         setBetAmountToMin();
@@ -487,7 +489,7 @@ function betInputHandler(e) {
       } else {
         // set to player max bet
         let maxBet = players[0].money;
-        //console.log(maxBet)
+        //log(maxBet)
         e.target.innerHTML = maxBet;
         e.preventDefault(); // prevent newest input if more than player money
       }
@@ -510,19 +512,19 @@ function checkValidBet(tempBetAmount) {
 
 function setToMaxBet() {
   // the amount entered in betAmount was too high, setting to the max possible bet
-  //console.log('setting to max bet');
+  //log('setting to max bet');
 
   let maxBet = players[0].money;
 };
 
 function betPlaced(betAmount) {
-  //console.log("bet placed for " + betAmount);
+  //log("bet placed for " + betAmount);
   // a new valid (is this checked???) bet has been placed
   // update the roundBetAmount and restart the round order starting at the bet makers index + 1
 
   roundBetAmount = betAmount;
 
-  //console.log("new roundBetAmount: " + roundBetAmount);
+  //log("new roundBetAmount: " + roundBetAmount);
 
   // find the next player and start a new round of betting w/ them
   //let nextPlayer = findNextPlayer(activePlayer);
@@ -579,6 +581,7 @@ function getPlayerRoundIndex(player) {
 };
 
 function rankAiHand(player) {
+
   let hand = player.hand;
   hand = hand.concat(communityCards);
 
@@ -587,26 +590,39 @@ function rankAiHand(player) {
   //isFourOfKind(hand);
   //isFullHouse(hand)
   //isFlush(hand);
-  //isStraight(hand);
-  //isThreeOfKind(hand);
-  //isTwoPair(hand);
-  isPair(hand);
+  if(isStraight(hand)) {
+    log("Player " + player.name + " has a straight.");
+  }
+
+  if(isThreeOfKind(hand)) {
+    //log("Player " + player.name + " has a three of kind.");
+  }
+  
+  if(isTwoPair(hand, player)) {
+    //log("Player " + player.name + " has a two pair.");
+  }
+
+  if(isPair(hand, player)) {
+    //log("Player " + player.name + " has a pair.");
+  }
+
   //isHighCard(hand);
+  
 
 };
 
 function isRoyalFlush(hand) {
   hand = sortCards(hand);
   hand = removeDuplicateValues(hand);
-  console.log(hand);
+  log(hand);
 
   // check if hand has at least 5 cards
   if(hand.length >= 5) {
 
     // check if highest card is an ace
     if(hand[0].value == 14) {
-      console.log('highest card in hand is an ace');
-      console.log(hand);
+      log('highest card in hand is an ace');
+      log(hand);
 
       // if there is an ace then loop through all cards and see it b.value == a.value - 1
       // check if card is one less than prevCard
@@ -621,71 +637,154 @@ function isRoyalFlush(hand) {
       }
 
       if(hasRank) {
-        console.log('------------------------');
-        console.log('has this hand rank');
-        console.log('------------------------');
+        log('------------------------');
+        log('has this hand rank');
+        log('------------------------');
       }
 
     }
 
   }
-  console.log('checking if hand is a royalFlush');
+  log('checking if hand is a royalFlush');
 };
 
 function isStraighFlush(hand) {
-  console.log('checking if hand is a StraighFlush');
+  log('checking if hand is a StraighFlush');
 
   // difference between straigh flush and royal flush
 };
 
 function isFourOfKind(hand) {
-  console.log('checking if hand is a FourOfKind');
+  log('checking if hand is a FourOfKind');
 };
 
 function isFullHouse(hand) {
-  console.log('checking if hand is a FullHouse');
+  log('checking if hand is a FullHouse');
 };
 
 function isFlush(hand) {
-  console.log('checking if hand is a Flush');
+  log('checking if hand is a Flush');
 };
 
 function isStraight(hand) {
-  console.log('checking if hand is a Straight');
+  //log('checking if hand is a Straight');
+
+  hand = sortCards(hand);
+  hand = removeDuplicateValues(hand);
+
+  // check if hand has at least 5 cards
+  if(hand.length >= 5) {
+
+    let foundStraightMatch = true;
+    let numMatches = 0;
+    for(let i = 1; i < hand.length; i++) {
+      let card = hand[i];
+      let prevCard = hand[i - 1];
+
+      if(card.value != prevCard.value - 1) {
+        foundStraightMatch = false;
+        numMatches = 0; // reset to restart the count for a straight
+      } else {
+        // if is a straightMatch then
+        numMatches++;
+      }
+
+      if(numMatches == 4) {
+        return true;
+      }
+
+    }
+  }
 };
 
 function isThreeOfKind(hand) {
-  console.log('checking if hand is a ThreeOfKind');
+  //log('checking if hand is a ThreeOfKind');
+
+  let matches = [];
+  hand.forEach((card, index) => {
+    hand.forEach((otherCard, otherIndex) => {
+      if(card.value == otherCard.value && index != otherIndex) {
+        let matched = false;
+        matches.forEach((matchCard) => {
+          //log(card, matchCard);
+          if(card == matchCard) {
+            matched = true;
+          }
+        });
+
+        if(!matched) {
+          matches.push(card);
+        }
+      }
+    });
+  });
+  if(matches.length == 3) {
+    return true;
+  }
 };
 
-function isTwoPair(hand) {
-  console.log('checking if hand is a TwoPair');
+function isTwoPair(hand, player) {
+  //log('checking if hand is a TwoPair');
+  let pairs = findPairs(hand, player);
+
+  if(pairs.length == 2) {
+    //log('player ' + player.name + " has two pairs.");
+    return true;
+  }
 };
 
-function isPair(hand) {
-  console.log('checking if hand is a Pair');
+function isPair(hand, player) {
+  //log('checking if hand is a Pair');
 
-  // for finding a pair we only need to compare the numbers so create
-  // an array of only the hand values
+  let pairs = findPairs(hand, player);
 
-  let values = [];
-  hand.forEach((card) => {
-    values.push(card.value);
+  if(pairs.length >= 1) {
+    //log('player ' + player.name + " has one pair.");
+    return true;
+  }
+};
+
+function findPairs(hand, player) {
+  let pairs = [];
+
+  hand.forEach((card, index) => {
+    hand.forEach((otherCard, otherIndex) => {
+      if(card.value == otherCard.value && index != otherIndex) {
+        // make sure we haven't already found this match
+        if(pairs.length == 0) {
+          pairs.push(card);
+        } else {
+          let match = false;
+          pairs.forEach((pairCard) => {
+            if(card.value == pairCard.value) {
+              match = true;
+            }
+          }); 
+          if(!match) {
+            pairs.push(card);
+          }
+        }
+      }
+    });
   });
 
-  let pair = values.find((value, index) => (values.indexOf(value) != index));
-  
-  if(pair) {
-    console.log("pair: " + pair);
+
+  if(pairs.length > 0) {
+    //log("Player " + player.name + " has a pair(s).");
+    pairs.forEach((pair) => {
+      //log(pair);
+    });
+    //log("Player " + player.name + " 's hand:", hand);
   }
 
+  return pairs;
 };
 
 function isHighCard(hand) {
-  console.log('checking if hand is a HighCard');
+  log('checking if hand is a HighCard');
 
   hand = sortCards(hand);
-  console.log(hand);
+  log(hand);
 
 };
 
@@ -696,7 +795,7 @@ function sortCards(hand) {
 };
 
 function removeDuplicateValues(hand) {
-  // remove and duplicate cards with same values in hand
+  // remove any duplicate cards with same values in hand
 
   let newHand = [];
   hand.forEach((card) => {
