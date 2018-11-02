@@ -9,6 +9,7 @@ let roundBetAmount = 0;
 let activePlayer;
 let startingPlayerIndex = 0;
 let suits = ["spades", "hearts", "clubs", "diamonds"];
+let showPrivateCards = false; // whether the ai players cards should be displayed
 
 let log = console.log;
 
@@ -195,20 +196,88 @@ function updatePlayerCardElems() {
 
   players.forEach((player) => {
     let playerElem = document.querySelector("." + player.name);
+    let children = Array.from(playerElem.children);
 
-    playerElem.childNodes.forEach((cardElem) => {
+    children.forEach((cardElem) => {
+      //log(cardElem)
+      if(cardElem.classList.contains("cards")) {
+        let cards = Array.from(cardElem.children);
+        //log(cards);
+        cards.forEach((card) => {
+          //log(card);
 
-      // set card1
-      if(cardElem.className == "card1") {
-        cardElem.innerHTML = player.hand[0].value + player.hand[0].suit;
+          // set card1
+          if(card.classList.contains("card1")) {
+            //cardElem.innerHTML = player.hand[0].value + player.hand[0].suit;
+
+            if(player.name == "player0") {
+              getCardImage(card, player.hand[0].value, player.hand[0].suit);
+            } else {
+              // create the card image
+              if(showPrivateCards) {
+                getCardImage(card, player.hand[0].value, player.hand[0].suit);
+              } else {
+                getBackCard(card);
+              }
+            }
+          }
+
+          // set card2
+          if(card.classList.contains("card2")) {
+            //cardElem.innerHTML = player.hand[1].value + player.hand[1].suit;
+
+            if(player.name == "player0") {
+              getCardImage(card, player.hand[1].value, player.hand[1].suit);
+            } else {
+              // create the card image
+              if(showPrivateCards) {
+                getCardImage(card, player.hand[1].value, player.hand[1].suit);
+              } else {
+                getBackCard(card);
+              }
+            }
+          }
+        });
       }
 
-      // set card2
-      if(cardElem.className == "card2") {
-        cardElem.innerHTML = player.hand[1].value + player.hand[1].suit;
-      }
+    
     });
   });
+};
+
+function getBackCard(card) {
+  let image = "<img class='card_image' src='./assets/deck/card_back.svg'>"; 
+  card.innerHTML = image;
+};
+
+function getCardImage(elem, value, suit, isFinalCards) {
+
+  switch(value) {
+    case 14:
+      value = "Ace";
+      break;
+    case 13:
+      value = "King";
+      break;
+    case 12:
+      value = "Queen";
+      break;
+      case 11:
+      value = "Jack";
+      break;
+    default:
+      break;     
+  }
+
+  let imageName = value + "_of_" + suit + ".svg";
+
+  if(isFinalCards) {
+    let image = "<img class='final_card_image' src='./assets/deck/" + imageName + "'>"; 
+    return image;
+  } else {
+    let image = "<img class='card_image' src='./assets/deck/" + imageName + "'>"; 
+    elem.innerHTML = image;
+  }
 };
 
 function updateCommunityCards() {
@@ -280,7 +349,8 @@ function updateCommunityCardElems() {
     communityCards.forEach((card, i) => {
       if(i == index) {
         // matched the correct elem index to the array of cards index
-        cardElem.innerHTML = card.value + card.suit;
+        //cardElem.innerHTML = card.value + card.suit;
+        getCardImage(cardElem, card.value, card.suit);
       }
     })
   });
@@ -394,6 +464,8 @@ function startNextPlayerTurn(player) {
 
 function endOfRound() {
   // the current betting round has ended, move on to the next betting round / determine winner
+
+  showPrivateCards = false; // make sure not to show the ai players cards, unless it is end of hand
   
   switch(handStatus.onPhase) {
     case "preflop":
@@ -421,7 +493,10 @@ function endOfRound() {
       //log('showdown phase has ended and the hand has ended');
 
       // end of the hand
+      showPrivateCards = true;
+      updatePlayerCardElems(); // update to show ai cards
       findHandWinner(); // find the winner of the current hand
+      toggleDealNewHandButton(); // show the deal new hand btn, allow the player to start the next round
       
       break;  
   }
@@ -461,31 +536,39 @@ function displayFinalHand(player) {
   // at then end of a hand update the dom with all active players
   // final hands and ranks
 
-  //log('displaying final hand for player ' + player.name);
-
-  //log(player)
-
   let playerElem = document.querySelector("." + player.name);
   let children = Array.from(playerElem.children);
   children.forEach((child) => {
     if(child.classList.contains("final_hand")) {
       let finalHandElem = child;
       finalHandElemChildren = Array.from(finalHandElem.children);
+
       finalHandElemChildren.forEach((elem, index) => {
         if(index == 0) {
-          elem.innerHTML = player.rank;
+          // set final hand player rank
+          elem.innerHTML = "RANK: " + player.rank;
         } else if(index == 1) {
           let finalHandCardsElem = elem;
+
+          // set final player hand, including community cards
           player.finalHand.forEach((card) => {
-            let elem = document.createElement("div");
-            elem.innerHTML = card.value + card.suit;
-            finalHandCardsElem.append(elem);
+            let imageElem = getCardImage(card, card.value, card.suit, true);
+            finalHandCardsElem.innerHTML = finalHandCardsElem.innerHTML + imageElem;
           });
         }
       });
     }
   });  
 
+};
+
+function toggleDealNewHandButton() {
+  let betOptionsElem = document.querySelector(".deal_new_hand_button");
+  betOptionsElem.classList.toggle("deal_new_hand_button_hidden"); 
+};
+
+function dealNewHand() {
+  log('dealing new hand...');
 };
 
 function createRoundOrder(startingIndex) {
