@@ -13,61 +13,64 @@ let showPrivateCards = false; // whether the ai players cards should be displaye
 
 let log = console.log;
 
-function createDeck() {
-  let value = 2;
-  let onSuit = 0;
-  let cardsInSuit = 0;
-
-  for(let i = 0; i < 52; i++) {
-    
-    // create next card
-    let card = {
-      value: value,
-      suit: suits[onSuit]
-    }
-    deck.push(card);
-    
-    value++;
-    // check if card is past ace value
-    if(value > 14) {
-      value = 2;
-    }
-
-    cardsInSuit++;
-    // check if all cards in suit created
-    if(cardsInSuit > 13) {
-      onSuit++;
-      cardsInSuit = 0;
-    }
-  }
-};
-
-function createPlayers() {
-  let numPlayers = 6;
+let Game = {
+  createDeck: function createDeck() {
+    let value = 2;
+    let onSuit = 0;
+    let cardsInSuit = 0;
   
-  for(let i = 0; i < numPlayers; i++) {
-    let type = "ai";
-
-    // set the first player created to be the human
-    if(i == 0) {
-      type = "human";
+    for(let i = 0; i < 52; i++) {
+      
+      // create next card
+      let card = {
+        value: value,
+        suit: suits[onSuit]
+      }
+      deck.push(card);
+      
+      value++;
+      // check if card is past ace value
+      if(value > 14) {
+        value = 2;
+      }
+  
+      cardsInSuit++;
+      // check if all cards in suit created
+      if(cardsInSuit > 13) {
+        onSuit++;
+        cardsInSuit = 0;
+      }
     }
-
-    let player = {
-      num: i,
-      hand: [],
-      money: 1000,
-      name: "player" + i,
-      type: type,
-      roundBet: 0, // the ammount this player has bet so far this round
-      rank: null, // the players hand rank
-      finalHand: null // the total cards that the player could use in their hand, including community cards
+  },
+  createPlayers:function createPlayers() {
+    let numPlayers = 6;
+    
+    for(let i = 0; i < numPlayers; i++) {
+      let type = "ai";
+  
+      // set the first player created to be the human
+      if(i == 0) {
+        type = "human";
+      }
+  
+      let player = {
+        num: i,
+        hand: [],
+        money: 1000,
+        name: "player" + i,
+        type: type,
+        roundBet: 0, // the ammount this player has bet so far this round
+        rank: null, // the players hand rank
+        finalHand: null, // the total cards that the player could use in their hand, including community cards
+        highestValueInHand: null
+      }
+      players.push(player);
     }
-    players.push(player);
+  
+    setHumanPlayer();
   }
-
-  setHumanPlayer();
 };
+
 
 function setHumanPlayer() {
   // set the global humanPlayer var
@@ -83,7 +86,6 @@ function startGame() {
 
   // deal hand
   dealHand();
-  startBettingRound();
   // bet
     // round 1
     // round 2
@@ -96,8 +98,8 @@ function startGame() {
 
 function init() {
   addEventListeners();
-  createDeck();
-  createPlayers();
+  Game.createDeck();
+  Game.createPlayers();
   //createPlayerDOMElems();
   startGame();
   //log(deck, players);
@@ -138,11 +140,19 @@ function createPlayerDOMElems() {
 
 function dealHand() {
   setDefaultHandStatus();
+  deck = [];
+  Game.createDeck();
+  communityCards = [];
+  updateCommunityCardElems();
+  onPhase = "preflop";
   players.forEach((player) => {
+    player.hand = [];
+    player.finalHand = [];
     dealCards(player, 2);
   });
 
   updatePlayerCardElems();
+  startBettingRound();
 };
 
 function setDefaultHandStatus() {
@@ -344,16 +354,25 @@ function updateCommunityCardElems() {
 
   let communityCardsElem = document.querySelector(".community_cards");
   communityCardsArr = Array.from(communityCardsElem.children);
+  log(communityCards.length)
 
-  communityCardsArr.forEach((cardElem, index) => {
-    communityCards.forEach((card, i) => {
-      if(i == index) {
-        // matched the correct elem index to the array of cards index
-        //cardElem.innerHTML = card.value + card.suit;
-        getCardImage(cardElem, card.value, card.suit);
-      }
-    })
-  });
+  if(communityCards.length == 0) {
+    communityCardsArr.forEach((cardElem, index) => {
+      cardElem.innerHTML = "";
+    });
+  } else {
+    communityCardsArr.forEach((cardElem, index) => {
+      communityCards.forEach((card, i) => {
+        if(i == index) {
+          // matched the correct elem index to the array of cards index
+          //cardElem.innerHTML = card.value + card.suit;
+          getCardImage(cardElem, card.value, card.suit);
+        }
+      })
+    });
+  }
+
+  
 };
 
 function aiTurn(player) {
@@ -509,6 +528,7 @@ function findHandWinner() {
   let highestRankedHand = {
     rank: null,
     player: null,
+    highestValueInHand: null, // used for determining winner of tied ranks
   }
 
   players.forEach((player) => {
@@ -516,9 +536,17 @@ function findHandWinner() {
     let rank = rankHand(player);
     //log(rank, player.name)
     
-    if(!highestRankedHand.rank || rank.rank > highestRankedHand.rank) {
-      highestRankedHand.rank = rank.rank;
-      highestRankedHand.player = player;
+    if(!highestRankedHand.rank || rank.rank >= highestRankedHand.rank) { 
+
+      if(highestRankedHand.rank == rank.rank) { // if same rank check higest value in each hand
+        if(rank.highestCardInHand > highestRankedHand.highestValueInHand) { // if higher than current highest
+          highestRankedHand.rank = rank.rank;
+          highestRankedHand.player = player;
+        }
+      } else {
+        highestRankedHand.rank = rank.rank;
+        highestRankedHand.player = player;
+      }
     }
 
     player.rank = rank.rank;
@@ -527,7 +555,27 @@ function findHandWinner() {
     displayFinalHand(player);
   });
 
+  // check if there is a tie
+  //
+  //
+
+  let winnerElem = document.querySelector(".winner");
+  winnerElem.innerHTML = highestRankedHand.player.name + "wins the hand!";
   log(highestRankedHand);
+
+};
+
+function clearFinalHand(player) {
+  log('test')
+  let playerElem = document.querySelector("." + player.name);
+  let children = Array.from(playerElem.children);
+  children.forEach((child) => {
+    if(child.classList.contains("final_hand")) {
+      let finalHandElem = child;
+      log(finalHandElem)
+      finalHandElem.innerHTML = "";
+    }
+  });
 
 };
 
@@ -565,10 +613,19 @@ function displayFinalHand(player) {
 function toggleDealNewHandButton() {
   let betOptionsElem = document.querySelector(".deal_new_hand_button");
   betOptionsElem.classList.toggle("deal_new_hand_button_hidden"); 
+
+  let endOfHandElem = document.querySelector(".end_of_hand");
+  endOfHandElem.classList.toggle("end_of_hand_show");
 };
 
 function dealNewHand() {
   log('dealing new hand...');
+
+  dealHand();
+  players.forEach((player) => {
+    clearFinalHand(player);
+  });
+  toggleDealNewHandButton();
 };
 
 function createRoundOrder(startingIndex) {
@@ -735,7 +792,7 @@ function rankHand(player) {
   let hand = player.hand;
   hand = hand.concat(communityCards);
 
-  //log(hand);
+  let highestCardInHand = hand[0].value;
 
   let handRank = 0;
 
@@ -796,7 +853,8 @@ function rankHand(player) {
 
   return {
     rank: handRank,
-    hand: hand
+    hand: hand,
+    highestCardInHand: highestCardInHand
   };
 };
 
@@ -843,11 +901,13 @@ function isStraighFlush(hand) {
 function isFourOfKind(hand) {
   //log('checking if hand is a FourOfKind');
 
-  let matches = [];
+  /*
+  let matches;
   hand.forEach((card, index) => {
+    matches = [];
     hand.forEach((otherCard, otherIndex) => {
       if(card.value == otherCard.value && index != otherIndex) {
-        let matched = false;
+        let matched = true;
         matches.forEach((matchCard) => {
           //log(card, matchCard);
           if(card == matchCard) {
@@ -860,15 +920,48 @@ function isFourOfKind(hand) {
         }
       }
     });
+    });
+  */
+  
+  let hasFourOfAKind = false;
+  hand.forEach((card, index) => {
+    // for each card check how many other cards their are of this value
+    let value = card.value;
+    let numOfValue = 0;
+    
+    // check against every card in hand
+    hand.forEach((otherCard, otherIndex) => {
+      if(index != otherIndex) { // ignore counting the same card when we loop over it
+        if(value == otherCard.value) {
+          numOfValue++;
+        }
+      }
+    });
+
+    if(numOfValue >= 4) {
+      hasFourOfAKind = true;
+    }
+
   });
+
+  if(hasFourOfAKind) {
+    return true;
+  } else {
+    return false;
+  }
+
+
+  
 
   //log(matches.length)
 
+  /*
   if(matches.length >= 4) {
     return true;
   } else {
     return false;
   }
+  */
 };
 
 function isFullHouse(hand) {
@@ -1078,4 +1171,4 @@ function removeDuplicateValues(hand) {
   return newHand;
 };
 
-init();
+init(); // start

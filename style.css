@@ -1,6 +1,6 @@
 :root {
   /* global scope css vars */
-  --playerSize: 25%; 
+  --playerSize: 30%; 
 }
 
 html, body {
@@ -15,8 +15,8 @@ html, body {
 }
 
 .wrapper {
-  height: 75%;
-  width: 75%;
+  height: 100%;
+  width: 100%;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -65,7 +65,7 @@ html, body {
 }
 
 .card {
-  width: 40%;
+  width: 20%;
   height: 100%;
 }
 
@@ -77,7 +77,13 @@ html, body {
 }
 
 .final_hand {
-
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  position: relative;
 }
 
 .hand_rank {
@@ -85,18 +91,18 @@ html, body {
 }
 
 .final_hand_cards {
-  position: absolute;
   top: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 10%;
-  height: 10%;
+  width: 100%;
+  height: 100%;
+  opacity: 0.5;
 }
 
 .final_card_image {
-  height: 100px;
-  width: 75px;
+  height: 100%;
+  width: 10%;
 }
 
 .player_name {
@@ -128,13 +134,13 @@ html, body {
 .player4 {
   position: absolute;
   top: calc(20%);
-  left: calc(70%);
+  left: calc(65%);
 }
 
 .player5 {
   position: absolute;
   top: calc(60%);
-  left: calc(80% - 10%);
+  left: calc(65%);
 }
 
 /* human betting buttons */
@@ -145,17 +151,19 @@ html, body {
   width: 40%;
   height: 50px;
   left: calc(50% - 20%);
-  margin-top: -50px;
+  margin-top: 0px;
   display: flex;
   justify-content: space-around;
   align-items: center;
   opacity: .99;
   z-index: -1;
+  display: none;
 }
 
 .bet_options_show {
-  margin-top: 0%;
+  margin-top: -50px;
   z-index: 0;
+  display: flex;
 }
 
 .bet_button {
@@ -196,24 +204,26 @@ html, body {
 /* community cards */
 
 .community_cards {
-  height: 30%;
-  width: 50%;
+  height: 20%;
+  width: 35%;
   background: rgb(8, 51, 31);
   position: absolute;
-  top: calc(50% - 15%);
-  left: calc(50% - 25%);
+  top: calc(50% - 10%);
+  left: calc(50% - 17.5%);
   display: flex;
   justify-content: space-around;
   align-items: center;
 }
 
 .community_card {
-  width: 18%;
+  width: 15%;
   overflow: hidden;
   text-align: center;
 }
 
-.deal_new_hand_button {
+/* end of hand */ 
+
+.end_of_hand {
   position: absolute;
   height: 100px;
   width: 300px;
@@ -221,10 +231,24 @@ html, body {
   left: calc(50% - 150px);
   z-index: 3;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   background: #111111;
   cursor: pointer;
+  display: none;
+}
+
+.end_of_hand_show {
+  display: flex;
+}
+
+.winner {
+  
+}
+
+.deal_new_hand_button {
+  
 }
 
 .deal_new_hand_button_hidden {
