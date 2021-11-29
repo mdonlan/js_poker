@@ -1,0 +1,22 @@
+{
+  "name": "js_poker",
+  "version": "0.0.1",
+  "description": "---",
+  "main": "main.js",
+  "scripts": {
+    "build": "esbuild ./src/index.js --bundle --outfile=./build/out.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mdonlan/js_poker.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mdonlan/js_poker/issues"
+  },
+  "homepage": "https://github.com/mdonlan/js_poker#readme",
+  "dependencies": {
+    "esbuild": "^0.14.0"
+  }
+}
