@@ -1,0 +1,6 @@
+{
+    "compilerOptions": {
+        "isolatedModules": true,
+        "lib": ["es6", "DOM"]
+    }
+}
