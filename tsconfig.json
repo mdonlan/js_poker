@@ -1,6 +1,12 @@
 {
     "compilerOptions": {
         "isolatedModules": true,
-        "lib": ["es6", "DOM"]
+        "esModuleInterop": true,
+        "lib": ["es2019", "DOM"],
+        "diagnostics": false,
+        "noEmit": true,
+        "listFiles": true,
+        "watch": false,
+        "jsx": "preserve"
     }
 }

@@ -1,17 +1,5 @@
 (() => {
-  // src/Deck.js
-  function test_func() {
-    console.log("test_func!");
-  }
-
   // src/index.ts
-  var dir = 0;
-  if (dir == 0) {
-    console.log("hello");
-  } else {
-    console.log("goodbye");
-  }
-  test_func();
   var deck = [];
   var players = [];
   var roundOrder = [];
@@ -23,60 +11,82 @@
   var startingPlayerIndex = 0;
   var suits = ["spades", "hearts", "clubs", "diamonds"];
   var showPrivateCards = false;
-  var log = console.log;
-  function createDeck() {
-    let deck2 = [];
-    let cardValue = 2;
-    let onSuit = 0;
-    let cardsInSuit = 0;
+  function create_ui() {
+    const bet_options_elem = document.querySelector(".bet_options");
+    const check_button = document.createElement("div");
+    check_button.onclick = humanCheck;
+    check_button.innerHTML = "CHECK";
+    check_button.className = "check bet_button";
+    bet_options_elem.appendChild(check_button);
+    const bet_button = document.createElement("div");
+    bet_button.onclick = humanBet;
+    bet_button.innerHTML = "BET";
+    bet_button.className = "bet bet_button";
+    bet_options_elem.appendChild(bet_button);
+    const fold_button = document.createElement("div");
+    fold_button.onclick = humanFold;
+    fold_button.innerHTML = "FOLD";
+    fold_button.className = "fold bet_button";
+    bet_options_elem.appendChild(fold_button);
+    const bet_amount_button = document.createElement("input");
+    bet_amount_button.contentEditable = "true";
+    bet_amount_button.placeholder = "Bet Amount";
+    bet_amount_button.className = "bet_amount";
+    bet_options_elem.appendChild(bet_amount_button);
+  }
+  create_ui();
+  function create_deck() {
+    let new_deck = [];
+    let card_value = 2;
+    let current_suit = 0;
+    let cards_in_suit = 0;
     for (let i = 0; i < 52; i++) {
       let card = {
-        cardValue,
-        suit: suits[onSuit],
+        value: card_value,
+        suit: current_suit,
         id: i
       };
-      deck2.push(card);
-      cardValue++;
-      if (cardValue > 14) {
-        cardValue = 2;
+      new_deck.push(card);
+      card_value++;
+      if (card_value > 14) {
+        card_value = 2;
       }
-      cardsInSuit++;
-      if (cardsInSuit > 13) {
-        onSuit++;
-        cardsInSuit = 0;
+      cards_in_suit++;
+      if (cards_in_suit > 13) {
+        current_suit++;
+        cards_in_suit = 0;
       }
     }
-    return deck2;
+    return new_deck;
   }
   function createPlayers() {
-    let numPlayers = 6;
-    for (let i = 0; i < numPlayers; i++) {
-      let type = "ai";
+    let num_players = 6;
+    let players2 = [];
+    for (let i = 0; i < num_players; i++) {
+      let type = 0;
       if (i == 0) {
-        type = "human";
+        type = 1;
       }
       let player = {
-        num: i,
+        id: i,
         hand: [],
         money: 1e3,
         name: "player" + i,
         type,
-        roundBet: 0,
-        rank: null,
-        finalHand: null,
-        highestValueInHand: null
+        round_bet: 0,
+        hand_rank: null,
+        final_hand_cards: null,
+        highest_value_in_hand: null
       };
-      players.push(player);
+      players2.push(player);
     }
-    setHumanPlayer();
-  }
-  function setHumanPlayer() {
-    humanPlayer = players[0];
+    return players2;
   }
   function init() {
     addEventListeners();
-    deck = createDeck();
-    createPlayers();
+    deck = create_deck();
+    players = createPlayers();
+    humanPlayer = players[0];
     newHand();
   }
   function addEventListeners() {
@@ -95,7 +105,7 @@
   function dealHand() {
     players.forEach((player) => {
       player.hand = [];
-      player.finalHand = [];
+      player.final_hand_cards = [];
       dealCards(player, 2);
     });
     updatePlayerCardElems();
@@ -155,10 +165,10 @@
           cards.forEach((card) => {
             if (card.classList.contains("card1")) {
               if (player.name == "player0") {
-                getCardImage(card, player.hand[0].cardValue, player.hand[0].suit, false);
+                getCardImage(card, player.hand[0].value, player.hand[0].suit, false);
               } else {
                 if (showPrivateCards) {
-                  getCardImage(card, player.hand[0].cardValue, player.hand[0].suit, false);
+                  getCardImage(card, player.hand[0].value, player.hand[0].suit, false);
                 } else {
                   getBackCard(card);
                 }
@@ -166,10 +176,10 @@
             }
             if (card.classList.contains("card2")) {
               if (player.name == "player0") {
-                getCardImage(card, player.hand[1].cardValue, player.hand[1].suit, false);
+                getCardImage(card, player.hand[1].value, player.hand[1].suit, false);
               } else {
                 if (showPrivateCards) {
-                  getCardImage(card, player.hand[1].cardValue, player.hand[1].suit, false);
+                  getCardImage(card, player.hand[1].value, player.hand[1].suit, false);
                 } else {
                   getBackCard(card);
                 }
@@ -201,7 +211,22 @@
       default:
         break;
     }
-    let imageName = cardValue + "_of_" + suit + ".svg";
+    let suit_str;
+    switch (suit) {
+      case 2:
+        suit_str = "Clubs";
+        break;
+      case 0:
+        suit_str = "Hearts";
+        break;
+      case 3:
+        suit_str = "Diamonds";
+        break;
+      case 1:
+        suit_str = "Spades";
+        break;
+    }
+    let imageName = cardValue + "_of_" + suit_str + ".svg";
     if (isFinalCards) {
       let image = "<img class='final_card_image' src='./assets/deck/" + imageName + "'>";
       return image;
@@ -260,7 +285,7 @@
       communityCardsArr.forEach((cardElem, index) => {
         communityCards.forEach((card, i) => {
           if (i == index) {
-            getCardImage(cardElem, card.cardValue, card.suit, false);
+            getCardImage(cardElem, card.value, card.suit, false);
           }
         });
       });
@@ -288,7 +313,7 @@
     betAmountElem.innerHTML = roundBetAmount.toString();
   }
   function endTurn(player, newBetHasBeenPlaced) {
-    if (player.type == "human") {
+    if (player.type == 1) {
       toggleBetHumanOptions();
     }
     if (newBetHasBeenPlaced) {
@@ -319,7 +344,8 @@
     return nextPlayer;
   }
   function startNextPlayerTurn(player) {
-    if (player.type == "ai") {
+    console.log("starting next players turn");
+    if (player.type == 0) {
       aiTurn(player);
     } else {
       humanTurn(player);
@@ -353,20 +379,17 @@
     }
   }
   function findHandWinner() {
-    let highestRankedHand = {
-      rank: null,
-      player: null,
-      highestValueInHand: null
-    };
+    let highestRankedHand;
     players.forEach((player) => {
+      console.log(player);
       let rankedHand = rankHand(player);
-      player.rank = rankedHand.rank;
-      player.finalHand = rankedHand.hand;
+      player.hand_rank = rankedHand.rank;
+      player.final_hand_cards = rankedHand.hand;
       let isBetterHand = compareRankedHands(highestRankedHand, rankedHand);
       if (isBetterHand) {
         highestRankedHand.rank = rankedHand.rank;
         highestRankedHand.player = player;
-        highestRankedHand.highestValueInHand = rankedHand.highestValueInHand;
+        highestRankedHand.highest_value_in_hand = rankedHand.highest_value_in_hand;
       }
       displayFinalHand(player);
     });
@@ -393,7 +416,7 @@
     ;
     let winnerElem = document.querySelector(".winner");
     winnerElem.innerHTML = highestRankedHand.player.name + "wins the hand!";
-    log(highestRankedHand);
+    console.log(highestRankedHand);
   }
   function displayFinalHand(player) {
     let playerElem = document.querySelector("." + player.name);
@@ -404,11 +427,11 @@
         let finalHandElemChildren = Array.from(finalHandElem.children);
         finalHandElemChildren.forEach((elem, index) => {
           if (index == 0) {
-            elem.innerHTML = "RANK: " + player.rank;
+            elem.innerHTML = "RANK: " + player.hand_rank;
           } else if (index == 1) {
             let finalHandCardsElem = elem;
-            player.finalHand.forEach((card) => {
-              let imageElem = getCardImage(card, card.cardValue, card.suit, true);
+            player.final_hand_cards.forEach((card) => {
+              let imageElem = getCardImage(elem, card.value, card.suit, true);
               finalHandCardsElem.innerHTML = finalHandCardsElem.innerHTML + imageElem;
             });
           }
@@ -430,6 +453,22 @@
   function toggleBetHumanOptions() {
     let betOptionsElem = document.querySelector(".bet_options");
     betOptionsElem.classList.toggle("bet_options_show");
+  }
+  function humanCheck() {
+    console.log("human checked");
+    endTurn(humanPlayer, false);
+  }
+  function humanBet() {
+    let betAmountElem = document.querySelector(".bet_amount");
+    let betAmount = parseInt(betAmountElem.innerHTML);
+    if (betAmount > 0 && betAmount >= roundBetAmount) {
+      betPlaced(betAmount);
+      endTurn(humanPlayer, true);
+    } else {
+    }
+  }
+  function humanFold() {
+    endTurn(humanPlayer, false);
   }
   function betInputHandler(e) {
     if (e.keyCode >= 48 && e.keyCode <= 57) {
@@ -458,6 +497,9 @@
       return false;
     }
   }
+  function betPlaced(betAmount) {
+    roundBetAmount = betAmount;
+  }
   function setNewRoundOrderAfterBet(player) {
     let nextPlayer = findNextPlayer(player);
     let nextPlayerIndex = getPlayerRoundIndex(nextPlayer);
@@ -479,9 +521,9 @@
   function rankHand(player) {
     let hand = player.hand;
     hand = hand.concat(communityCards);
-    let highestValueInHand = hand[0].cardValue;
-    let handRank = 0;
-    let handRankText = "High Card";
+    let highestValueInHand = hand[0].value;
+    let handRank;
+    let handRankText;
     if (isPair(hand)) {
       handRank = 1;
       handRankText = "Pair";
@@ -518,11 +560,12 @@
       handRank = 9;
       handRankText = "Royal Flush";
     }
-    log("Player " + player.name + " has a " + handRankText);
+    console.log("Player " + player.name + " has a " + handRankText);
     return {
       rank: handRank,
-      hand,
-      highestValueInHand
+      player,
+      highest_value_in_hand: highestValueInHand,
+      hand
     };
   }
   function isRoyalFlush(hand) {
@@ -753,7 +796,7 @@
       this.rankHands();
     }
     setDeck() {
-      this.deck = createDeck();
+      this.deck = create_deck();
       let usedCards = this.hand.concat(this.comCards);
       let used = this.hand;
       let sortedDeck = [];
