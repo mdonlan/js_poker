@@ -60,37 +60,92 @@
     endTurn(game.human, false);
   }
   function Bet_Area() {
-    return /* @__PURE__ */ elem("div", null, /* @__PURE__ */ elem("div", {
+    return /* @__PURE__ */ elem("div", {
+      class: "bet_options"
+    }, /* @__PURE__ */ elem("div", {
       class: "check bet_button",
       onclick: () => check_handler()
-    }, "check"), /* @__PURE__ */ elem("div", null, "bet"), /* @__PURE__ */ elem("div", null, "fold"));
+    }, "check"), /* @__PURE__ */ elem("div", {
+      class: "bet bet_button"
+    }, "bet"), /* @__PURE__ */ elem("div", {
+      class: "fold bet_button"
+    }, "fold"));
   }
   function App(props) {
-    return /* @__PURE__ */ elem("div", null, /* @__PURE__ */ elem("div", null, props.name), /* @__PURE__ */ elem(Bet_Area, null));
+    return /* @__PURE__ */ elem("div", null, /* @__PURE__ */ elem(Bet_Area, null));
   }
   function create_ui() {
-    const bet_options_elem = document.querySelector(".bet_options");
-    const check_button = document.createElement("div");
-    check_button.innerHTML = "CHECK";
-    check_button.className = "check bet_button";
-    bet_options_elem.appendChild(check_button);
-    const bet_button = document.createElement("div");
-    bet_button.innerHTML = "BET";
-    bet_button.className = "bet bet_button";
-    bet_options_elem.appendChild(bet_button);
-    const fold_button = document.createElement("div");
-    fold_button.innerHTML = "FOLD";
-    fold_button.className = "fold bet_button";
-    bet_options_elem.appendChild(fold_button);
-    const bet_amount_button = document.createElement("input");
-    bet_amount_button.contentEditable = "true";
-    bet_amount_button.placeholder = "Bet Amount";
-    bet_amount_button.className = "bet_amount";
-    bet_options_elem.appendChild(bet_amount_button);
     document.getElementById("root").appendChild(/* @__PURE__ */ elem(App, {
       name: "foo"
     }));
   }
+
+  // src/Sim_Hand.ts
+  var SimulateHand = class {
+    constructor(hand, comCards, player, players2) {
+      this.hand = hand;
+      this.comCards = [...comCards];
+      this.players = JSON.parse(JSON.stringify(players2));
+      this.player = JSON.parse(JSON.stringify(player));
+      this.startSim();
+    }
+    startSim() {
+      this.setDeck();
+      this.dealRestOfCommunityCards();
+      this.dealOtherPlayers();
+      this.dealRestOfHand();
+      this.rankHands();
+    }
+    setDeck() {
+      this.deck = create_deck();
+      let usedCards = this.hand.concat(this.comCards);
+      let used = this.hand;
+      let sortedDeck = [];
+      for (let i = 0; i < this.deck.length; i++) {
+        let card = this.deck[i];
+        let matched = false;
+        for (let j = 0; j < used.length; j++) {
+          let usedCard = used[j];
+          if (card.id == usedCard.id) {
+            matched = true;
+          }
+        }
+        if (!matched) {
+          sortedDeck.push(card);
+        }
+      }
+      this.deck = sortedDeck;
+    }
+    dealRestOfCommunityCards() {
+      while (this.comCards.length < 5) {
+        let index = Math.floor(Math.random() * this.deck.length);
+        let card = this.deck[index];
+        this.comCards.push(card);
+        this.deck.splice(index, 1);
+      }
+    }
+    dealOtherPlayers() {
+      this.players.forEach((player) => {
+        player.hand = [];
+        while (player.hand.length < 2) {
+          player.hand.push(this.dealSingleCard());
+        }
+      });
+    }
+    dealSingleCard() {
+      let index = Math.floor(Math.random() * this.deck.length);
+      let card = this.deck[index];
+      this.deck.splice(index, 1);
+      return card;
+    }
+    dealRestOfHand() {
+      while (this.comCards.length < 5) {
+        this.comCards.push(this.dealSingleCard());
+      }
+    }
+    rankHands() {
+    }
+  };
 
   // src/index.ts
   var deck = [];
@@ -361,7 +416,7 @@
     }
   }
   function aiTurn(player) {
-    let simHand = new SimulateHand(player.hand, communityCards, player);
+    let simHand = new SimulateHand(player.hand, communityCards, player, players);
     endTurn(player, false);
   }
   function humanTurn(player) {
@@ -447,10 +502,28 @@
         break;
     }
   }
+  function compareRankedHands(highestRankedHand, rankedHand) {
+    if (!highestRankedHand) {
+      return true;
+    }
+    if (rankedHand.rank > highestRankedHand.rank) {
+      return true;
+    }
+    if (rankedHand.rank == highestRankedHand.rank) {
+      if (rankedHand.highest_value_in_hand > highestRankedHand.highest_value_in_hand) {
+        return true;
+      }
+    }
+    return false;
+  }
   function findHandWinner() {
-    let highestRankedHand;
+    let highestRankedHand = {
+      rank: null,
+      player: null,
+      highest_value_in_hand: null,
+      hand: null
+    };
     players.forEach((player) => {
-      console.log(player);
       let rankedHand = rankHand(player);
       player.hand_rank = rankedHand.rank;
       player.final_hand_cards = rankedHand.hand;
@@ -462,27 +535,6 @@
       }
       displayFinalHand(player);
     });
-    function compareRankedHands(highestRankedHand2, rankedHand) {
-      let currentRank = rankedHand.rank;
-      let highestRank = highestRankedHand2.rank;
-      let currentHighCard = rankedHand.highestValueInHand;
-      let highCard = highestRankedHand2.highestValueInHand;
-      if (!highestRank) {
-        return true;
-      }
-      if (currentRank > highestRank) {
-        return true;
-      }
-      if (currentRank == highestRank) {
-        if (currentHighCard > highCard) {
-          return true;
-        }
-        if (currentHighCard == highCard) {
-        }
-      }
-      return false;
-    }
-    ;
     let winnerElem = document.querySelector(".winner");
     winnerElem.innerHTML = highestRankedHand.player.name + "wins the hand!";
     console.log(highestRankedHand);
@@ -551,11 +603,11 @@
       handRank = Hand_Rank.PAIR;
       handRankText = "Pair";
     }
-    if (isTwoPair(hand, player)) {
+    if (isTwoPair(hand)) {
       handRank = Hand_Rank.TWO_PAIR;
       handRankText = "Two Pair";
     }
-    if (isThreeOfKind(hand).hasRank) {
+    if (isThreeOfKind(hand)) {
       handRank = Hand_Rank.THREE_OF_KIND;
       handRankText = "Three of a kind";
     }
@@ -583,7 +635,6 @@
       handRank = Hand_Rank.ROYAL_FLUSH;
       handRankText = "Royal Flush";
     }
-    console.log("Player " + player.name + " has a " + handRankText);
     return {
       rank: handRank,
       player,
@@ -596,8 +647,8 @@
     hand = removeDuplicateValues(hand);
     let hasRoyalFlush = false;
     if (hand.length >= 5) {
-      if (hand[0].cardValue == 14) {
-        if (hand[4].cardValue == 10) {
+      if (hand[0].value == 14) {
+        if (hand[4].value == 10) {
           hasRoyalFlush = true;
         }
       }
@@ -729,7 +780,7 @@
       };
     }
   }
-  function isTwoPair(hand, player) {
+  function isTwoPair(hand) {
     let pairs = findPairs(hand);
     if (pairs.length == 2) {
       return true;
@@ -779,10 +830,9 @@
     return pairs;
   }
   function sortCards(hand) {
-    hand = hand.sort(function(a, b) {
-      return b.cardValue - a.cardValue;
+    return hand.sort(function(a, b) {
+      return b.value - a.value;
     });
-    return hand;
   }
   function removeDuplicateValues(hand) {
     let newHand2 = [];
@@ -792,7 +842,7 @@
       } else {
         let isDupe = false;
         newHand2.forEach((newHandCard) => {
-          if (card.cardValue == newHandCard.cardValue) {
+          if (card.value == newHandCard.value) {
             isDupe = true;
           }
         });
@@ -803,70 +853,5 @@
     });
     return newHand2;
   }
-  var SimulateHand = class {
-    constructor(hand, comCards, player) {
-      this.hand = hand;
-      this.comCards = [...comCards];
-      this.players = JSON.parse(JSON.stringify(players));
-      this.player = JSON.parse(JSON.stringify(player));
-      this.startSim();
-    }
-    startSim() {
-      this.setDeck();
-      this.dealRestOfCommunityCards();
-      this.dealOtherPlayers();
-      this.dealRestOfHand();
-      this.rankHands();
-    }
-    setDeck() {
-      this.deck = create_deck();
-      let usedCards = this.hand.concat(this.comCards);
-      let used = this.hand;
-      let sortedDeck = [];
-      for (let i = 0; i < this.deck.length; i++) {
-        let card = this.deck[i];
-        let matched = false;
-        for (let j = 0; j < used.length; j++) {
-          let usedCard = used[j];
-          if (card.id == usedCard.id) {
-            matched = true;
-          }
-        }
-        if (!matched) {
-          sortedDeck.push(card);
-        }
-      }
-      this.deck = sortedDeck;
-    }
-    dealRestOfCommunityCards() {
-      while (this.comCards.length < 5) {
-        let index = Math.floor(Math.random() * this.deck.length);
-        let card = this.deck[index];
-        this.comCards.push(card);
-        this.deck.splice(index, 1);
-      }
-    }
-    dealOtherPlayers() {
-      this.players.forEach((player) => {
-        player.hand = [];
-        while (player.hand.length < 2) {
-          player.hand.push(this.dealSingleCard());
-        }
-      });
-    }
-    dealSingleCard() {
-      let index = Math.floor(Math.random() * this.deck.length);
-      let card = this.deck[index];
-      this.deck.splice(index, 1);
-      return card;
-    }
-    dealRestOfHand() {
-      while (this.comCards.length < 5) {
-        this.comCards.push(this.dealSingleCard());
-      }
-    }
-    rankHands() {
-    }
-  };
   init();
 })();
