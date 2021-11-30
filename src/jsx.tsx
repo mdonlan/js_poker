@@ -1,4 +1,4 @@
-export const createElement = (tag, props, ...children) => {
+export const elem = (tag, props, ...children) => {
 	if (typeof tag === "function") return tag(props, ...children);
 	const element = document.createElement(tag);
 

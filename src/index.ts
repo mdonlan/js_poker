@@ -2,57 +2,12 @@
 
 // test_func();
 
+import { App, create_ui } from "./UI"
+import { Suit, Card, Player, Game, Player_Type, Ranked_Hand, Hand_Rank, game } from "./Game"
+
 export { } // for ts reasons...
 
-enum Suit {
-	HEARTS,
-	SPADES,
-	CLUBS,
-	DIAMONDS
-}
 
-interface Card {
-	value: number;
-	suit: Suit;
-	id: number;
-}
-
-enum Player_Type {
-	AI,
-	HUMAN
-}
-
-interface Player {
-	id: number; // formally -> 'num'
-	hand: Card[];
-	money: number;
-	name: string;
-	type: Player_Type;
-	round_bet: number;
-	hand_rank: number;
-	final_hand_cards: Card[]; // all cards this player could use in their final hand, including community cards
-	highest_value_in_hand: number;
-}
-
-interface Ranked_Hand {
-	rank: Hand_Rank;
-	player: Player;
-	highest_value_in_hand: number;
-	hand: Card[];
-}
-
-enum Hand_Rank {
-	HIGH_CARD,
-	PAIR,
-	TWO_PAIR,
-	THREE_OF_KIND,
-	STRAIGHT,
-	FLUSH,
-	FULL_HOUSE,
-	FOUR_OF_KIND,
-	STRAIGHT_FLUSH,
-	ROYAL_FLUSH
-}
 
 
 let deck: Card[] = [];
@@ -68,37 +23,11 @@ let startingPlayerIndex = 0;
 let suits = ["spades", "hearts", "clubs", "diamonds"];
 let showPrivateCards = false; // whether the ai players cards should be displayed
 
-function create_ui() {
 
-	const bet_options_elem = document.querySelector(".bet_options");
-	
-	const check_button = document.createElement("div");
-	check_button.onclick = humanCheck;
-	check_button.innerHTML = "CHECK";
-	check_button.className = "check bet_button";
-	bet_options_elem.appendChild(check_button);
-
-	const bet_button = document.createElement("div");
-	bet_button.onclick = humanBet;
-	bet_button.innerHTML = "BET";
-	bet_button.className = "bet bet_button";
-	bet_options_elem.appendChild(bet_button);
-
-	const fold_button = document.createElement("div");
-	fold_button.onclick = humanFold;
-	fold_button.innerHTML = "FOLD";
-	fold_button.className = "fold bet_button";
-	bet_options_elem.appendChild(fold_button);
-
-	const bet_amount_button = document.createElement("input");
-	bet_amount_button.contentEditable = 'true';
-	bet_amount_button.placeholder = "Bet Amount";
-	bet_amount_button.className = "bet_amount";
-	bet_options_elem.appendChild(bet_amount_button);
-	
-}
 
 create_ui();
+
+
 
 function create_deck(): Card[] {
 	let new_deck: Card[] = [];
@@ -163,10 +92,14 @@ function createPlayers(): Player[] {
 // }
 
 function init() {
-	addEventListeners();
+	console.log("init");
+	// addEventListeners();
 	deck = create_deck();
+	game.deck = deck;
 	players = createPlayers();
+	game.players = players;
 	humanPlayer = players[0];
+	game.human = humanPlayer;
 	newHand();
 };
 
@@ -489,7 +422,7 @@ function setBetAmountToMin() {
 	betAmountElem.innerHTML = roundBetAmount.toString();
 };
 
-function endTurn(player: Player, newBetHasBeenPlaced: boolean) {
+export function endTurn(player: Player, newBetHasBeenPlaced: boolean) {
 	// do end of turn logic here
 
 	if (player.type == Player_Type.HUMAN) {
@@ -750,11 +683,6 @@ function toggleBetHumanOptions() {
 	betOptionsElem.classList.toggle("bet_options_show");
 };
 
-function humanCheck() {
-	console.log("human checked");
-
-	endTurn(humanPlayer, false);
-};
 
 function humanBet() {
 	//log("human bet");

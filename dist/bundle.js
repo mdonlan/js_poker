@@ -1,4 +1,97 @@
 (() => {
+  // src/jsx.tsx
+  var elem = (tag, props, ...children) => {
+    if (typeof tag === "function")
+      return tag(props, ...children);
+    const element = document.createElement(tag);
+    Object.entries(props || {}).forEach(([name, value]) => {
+      if (name.startsWith("on") && name.toLowerCase() in window)
+        element.addEventListener(name.toLowerCase().substr(2), value);
+      else
+        element.setAttribute(name, value.toString());
+    });
+    children.forEach((child) => {
+      appendChild(element, child);
+    });
+    return element;
+  };
+  var appendChild = (parent, child) => {
+    if (Array.isArray(child))
+      child.forEach((nestedChild) => appendChild(parent, nestedChild));
+    else
+      parent.appendChild(child.nodeType ? child : document.createTextNode(child));
+  };
+
+  // src/Game.ts
+  var Suit = /* @__PURE__ */ ((Suit2) => {
+    Suit2[Suit2["HEARTS"] = 0] = "HEARTS";
+    Suit2[Suit2["SPADES"] = 1] = "SPADES";
+    Suit2[Suit2["CLUBS"] = 2] = "CLUBS";
+    Suit2[Suit2["DIAMONDS"] = 3] = "DIAMONDS";
+    return Suit2;
+  })(Suit || {});
+  var Player_Type = /* @__PURE__ */ ((Player_Type2) => {
+    Player_Type2[Player_Type2["AI"] = 0] = "AI";
+    Player_Type2[Player_Type2["HUMAN"] = 1] = "HUMAN";
+    return Player_Type2;
+  })(Player_Type || {});
+  var Hand_Rank = /* @__PURE__ */ ((Hand_Rank2) => {
+    Hand_Rank2[Hand_Rank2["HIGH_CARD"] = 0] = "HIGH_CARD";
+    Hand_Rank2[Hand_Rank2["PAIR"] = 1] = "PAIR";
+    Hand_Rank2[Hand_Rank2["TWO_PAIR"] = 2] = "TWO_PAIR";
+    Hand_Rank2[Hand_Rank2["THREE_OF_KIND"] = 3] = "THREE_OF_KIND";
+    Hand_Rank2[Hand_Rank2["STRAIGHT"] = 4] = "STRAIGHT";
+    Hand_Rank2[Hand_Rank2["FLUSH"] = 5] = "FLUSH";
+    Hand_Rank2[Hand_Rank2["FULL_HOUSE"] = 6] = "FULL_HOUSE";
+    Hand_Rank2[Hand_Rank2["FOUR_OF_KIND"] = 7] = "FOUR_OF_KIND";
+    Hand_Rank2[Hand_Rank2["STRAIGHT_FLUSH"] = 8] = "STRAIGHT_FLUSH";
+    Hand_Rank2[Hand_Rank2["ROYAL_FLUSH"] = 9] = "ROYAL_FLUSH";
+    return Hand_Rank2;
+  })(Hand_Rank || {});
+  var game = {
+    deck: [],
+    players: [],
+    human: null
+  };
+
+  // src/UI.tsx
+  function check_handler() {
+    console.log("user checked");
+    endTurn(game.human, false);
+  }
+  function Bet_Area() {
+    return /* @__PURE__ */ elem("div", null, /* @__PURE__ */ elem("div", {
+      class: "check bet_button",
+      onclick: () => check_handler()
+    }, "check"), /* @__PURE__ */ elem("div", null, "bet"), /* @__PURE__ */ elem("div", null, "fold"));
+  }
+  function App(props) {
+    return /* @__PURE__ */ elem("div", null, /* @__PURE__ */ elem("div", null, props.name), /* @__PURE__ */ elem(Bet_Area, null));
+  }
+  function create_ui() {
+    const bet_options_elem = document.querySelector(".bet_options");
+    const check_button = document.createElement("div");
+    check_button.innerHTML = "CHECK";
+    check_button.className = "check bet_button";
+    bet_options_elem.appendChild(check_button);
+    const bet_button = document.createElement("div");
+    bet_button.innerHTML = "BET";
+    bet_button.className = "bet bet_button";
+    bet_options_elem.appendChild(bet_button);
+    const fold_button = document.createElement("div");
+    fold_button.innerHTML = "FOLD";
+    fold_button.className = "fold bet_button";
+    bet_options_elem.appendChild(fold_button);
+    const bet_amount_button = document.createElement("input");
+    bet_amount_button.contentEditable = "true";
+    bet_amount_button.placeholder = "Bet Amount";
+    bet_amount_button.className = "bet_amount";
+    bet_options_elem.appendChild(bet_amount_button);
+    document.getElementById("root").appendChild(/* @__PURE__ */ elem(App, {
+      name: "foo"
+    }));
+  }
+
   // src/index.ts
   var deck = [];
   var players = [];
@@ -11,29 +104,6 @@
   var startingPlayerIndex = 0;
   var suits = ["spades", "hearts", "clubs", "diamonds"];
   var showPrivateCards = false;
-  function create_ui() {
-    const bet_options_elem = document.querySelector(".bet_options");
-    const check_button = document.createElement("div");
-    check_button.onclick = humanCheck;
-    check_button.innerHTML = "CHECK";
-    check_button.className = "check bet_button";
-    bet_options_elem.appendChild(check_button);
-    const bet_button = document.createElement("div");
-    bet_button.onclick = humanBet;
-    bet_button.innerHTML = "BET";
-    bet_button.className = "bet bet_button";
-    bet_options_elem.appendChild(bet_button);
-    const fold_button = document.createElement("div");
-    fold_button.onclick = humanFold;
-    fold_button.innerHTML = "FOLD";
-    fold_button.className = "fold bet_button";
-    bet_options_elem.appendChild(fold_button);
-    const bet_amount_button = document.createElement("input");
-    bet_amount_button.contentEditable = "true";
-    bet_amount_button.placeholder = "Bet Amount";
-    bet_amount_button.className = "bet_amount";
-    bet_options_elem.appendChild(bet_amount_button);
-  }
   create_ui();
   function create_deck() {
     let new_deck = [];
@@ -63,9 +133,9 @@
     let num_players = 6;
     let players2 = [];
     for (let i = 0; i < num_players; i++) {
-      let type = 0;
+      let type = Player_Type.AI;
       if (i == 0) {
-        type = 1;
+        type = Player_Type.HUMAN;
       }
       let player = {
         id: i,
@@ -83,15 +153,14 @@
     return players2;
   }
   function init() {
-    addEventListeners();
+    console.log("init");
     deck = create_deck();
+    game.deck = deck;
     players = createPlayers();
+    game.players = players;
     humanPlayer = players[0];
+    game.human = humanPlayer;
     newHand();
-  }
-  function addEventListeners() {
-    let elem = document.querySelector(".bet_amount");
-    elem.addEventListener("keypress", betInputHandler);
   }
   function newHand() {
     resetAllHandData();
@@ -194,7 +263,7 @@
     let image = "<img class='card_image' src='./assets/deck/card_back.svg'>";
     card.innerHTML = image;
   }
-  function getCardImage(elem, cardValue, suit, isFinalCards) {
+  function getCardImage(elem2, cardValue, suit, isFinalCards) {
     switch (cardValue) {
       case 14:
         cardValue = "Ace";
@@ -213,16 +282,16 @@
     }
     let suit_str;
     switch (suit) {
-      case 2:
+      case Suit.CLUBS:
         suit_str = "Clubs";
         break;
-      case 0:
+      case Suit.HEARTS:
         suit_str = "Hearts";
         break;
-      case 3:
+      case Suit.DIAMONDS:
         suit_str = "Diamonds";
         break;
-      case 1:
+      case Suit.SPADES:
         suit_str = "Spades";
         break;
     }
@@ -232,7 +301,7 @@
       return image;
     } else {
       let image = "<img class='card_image' src='./assets/deck/" + imageName + "'>";
-      elem.innerHTML = image;
+      elem2.innerHTML = image;
     }
   }
   function updateCommunityCards() {
@@ -313,7 +382,7 @@
     betAmountElem.innerHTML = roundBetAmount.toString();
   }
   function endTurn(player, newBetHasBeenPlaced) {
-    if (player.type == 1) {
+    if (player.type == Player_Type.HUMAN) {
       toggleBetHumanOptions();
     }
     if (newBetHasBeenPlaced) {
@@ -345,7 +414,7 @@
   }
   function startNextPlayerTurn(player) {
     console.log("starting next players turn");
-    if (player.type == 0) {
+    if (player.type == Player_Type.AI) {
       aiTurn(player);
     } else {
       humanTurn(player);
@@ -425,13 +494,13 @@
       if (child.classList.contains("final_hand")) {
         let finalHandElem = child;
         let finalHandElemChildren = Array.from(finalHandElem.children);
-        finalHandElemChildren.forEach((elem, index) => {
+        finalHandElemChildren.forEach((elem2, index) => {
           if (index == 0) {
-            elem.innerHTML = "RANK: " + player.hand_rank;
+            elem2.innerHTML = "RANK: " + player.hand_rank;
           } else if (index == 1) {
-            let finalHandCardsElem = elem;
+            let finalHandCardsElem = elem2;
             player.final_hand_cards.forEach((card) => {
-              let imageElem = getCardImage(elem, card.value, card.suit, true);
+              let imageElem = getCardImage(elem2, card.value, card.suit, true);
               finalHandCardsElem.innerHTML = finalHandCardsElem.innerHTML + imageElem;
             });
           }
@@ -453,52 +522,6 @@
   function toggleBetHumanOptions() {
     let betOptionsElem = document.querySelector(".bet_options");
     betOptionsElem.classList.toggle("bet_options_show");
-  }
-  function humanCheck() {
-    console.log("human checked");
-    endTurn(humanPlayer, false);
-  }
-  function humanBet() {
-    let betAmountElem = document.querySelector(".bet_amount");
-    let betAmount = parseInt(betAmountElem.innerHTML);
-    if (betAmount > 0 && betAmount >= roundBetAmount) {
-      betPlaced(betAmount);
-      endTurn(humanPlayer, true);
-    } else {
-    }
-  }
-  function humanFold() {
-    endTurn(humanPlayer, false);
-  }
-  function betInputHandler(e) {
-    if (e.keyCode >= 48 && e.keyCode <= 57) {
-      let newInput = e.key;
-      let oldBetAmount = e.target.innerHTML;
-      let tempBetAmount = oldBetAmount + newInput;
-      let validBet = checkValidBet(tempBetAmount);
-      if (!validBet) {
-        if (tempBetAmount < roundBetAmount) {
-          setBetAmountToMin();
-          e.preventDefault();
-        } else {
-          let maxBet = players[0].money;
-          e.target.innerHTML = maxBet;
-          e.preventDefault();
-        }
-      }
-    } else {
-      e.preventDefault();
-    }
-  }
-  function checkValidBet(tempBetAmount) {
-    if (tempBetAmount <= players[0].money && tempBetAmount > roundBetAmount) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-  function betPlaced(betAmount) {
-    roundBetAmount = betAmount;
   }
   function setNewRoundOrderAfterBet(player) {
     let nextPlayer = findNextPlayer(player);
@@ -525,39 +548,39 @@
     let handRank;
     let handRankText;
     if (isPair(hand)) {
-      handRank = 1;
+      handRank = Hand_Rank.PAIR;
       handRankText = "Pair";
     }
     if (isTwoPair(hand, player)) {
-      handRank = 2;
+      handRank = Hand_Rank.TWO_PAIR;
       handRankText = "Two Pair";
     }
     if (isThreeOfKind(hand).hasRank) {
-      handRank = 3;
+      handRank = Hand_Rank.THREE_OF_KIND;
       handRankText = "Three of a kind";
     }
     if (isStraight(hand)) {
-      handRank = 4;
+      handRank = Hand_Rank.STRAIGHT;
       handRankText = "Straight";
     }
     if (isFlush(hand)) {
-      handRank = 5;
+      handRank = Hand_Rank.FLUSH;
       handRankText = "Flush";
     }
     if (isFullHouse(hand)) {
-      handRank = 6;
+      handRank = Hand_Rank.FULL_HOUSE;
       handRankText = "Full House";
     }
     if (isFourOfKind(hand)) {
-      handRank = 7;
+      handRank = Hand_Rank.FOUR_OF_KIND;
       handRankText = "Four of a kind";
     }
     if (isStraighFlush(hand)) {
-      handRank = 8;
+      handRank = Hand_Rank.STRAIGHT_FLUSH;
       handRankText = "Straight Flush";
     }
     if (isRoyalFlush(hand)) {
-      handRank = 9;
+      handRank = Hand_Rank.ROYAL_FLUSH;
       handRankText = "Royal Flush";
     }
     console.log("Player " + player.name + " has a " + handRankText);
