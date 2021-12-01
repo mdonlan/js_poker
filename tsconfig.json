@@ -3,10 +3,12 @@
         "isolatedModules": true,
         "esModuleInterop": true,
         "lib": ["es2019", "DOM"],
-        "diagnostics": false,
+        "diagnostics": true,
+        "extendedDiagnostics": true,
         "noEmit": true,
-        "listFiles": true,
+        "listFiles": false,
         "watch": false,
-        "jsx": "preserve"
+        "jsx": "preserve",
+        "skipDefaultLibCheck": true,
     }
 }

@@ -5,7 +5,8 @@
   "main": "main.js",
   "scripts": {
     "build_old": "nodemon --watch ./src esbuild.config.js && tsc",
-    "build": "nodemon --watch 'src/**/*' -e ts,tsx --exec 'node esbuild.config.js && tsc'"
+    "build": "nodemon --watch 'src/**/*' -e ts,tsx --exec 'node esbuild.config.js && tsc'",
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -18,9 +19,13 @@
   },
   "homepage": "https://github.com/mdonlan/js_poker#readme",
   "dependencies": {
-    "esbuild": "^0.14.0"
+    "@types/jest": "^27.0.3",
+    "esbuild": "^0.14.0",
+    "ts-jest": "^27.0.7"
   },
   "devDependencies": {
+    "esbuild-jest": "^0.5.0",
+    "jest": "^27.4.2",
     "typescript": "^4.5.2"
   }
 }

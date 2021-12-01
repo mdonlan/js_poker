@@ -6,8 +6,7 @@
 import { Card, Player } from "./Game";
 import { create_deck } from ".";
 
-export class SimulateHand {
-
+export class SimulateHand { 
 	public hand;
 	public comCards;
 	public players;

@@ -3,13 +3,13 @@
 // test_func();
 
 import { App, create_ui } from "./UI"
-import { Suit, Card, Player, Game, Player_Type, Ranked_Hand, Hand_Rank, game } from "./Game"
+import { Suit, Card, Player, Game, Player_Type, Ranked_Hand, Hand_Rank, game, Card_Type } from "./Game"
 import { SimulateHand } from "./Sim_Hand";
 
 
 
 
-let deck: Card[] = [];
+// let deck: Card[] = [];
 let players: Player[] = [];
 
 let roundOrder: Player[] = [];
@@ -24,7 +24,7 @@ let showPrivateCards = false; // whether the ai players cards should be displaye
 
 
 
-create_ui();
+
 
 
 
@@ -57,6 +57,22 @@ export function create_deck(): Card[] {
 	return new_deck;
 };
 
+export function create_player(id: number, type: Player_Type): Player {
+	let player: Player = {
+		id: id,
+		hand: [],
+		money: 1000,
+		name: "player" + id,
+		type: type,
+		round_bet: 0,
+		hand_rank: null,
+		final_hand_cards: null,
+		highest_value_in_hand: null
+	}
+
+	return player;
+}
+
 function createPlayers(): Player[] {
 	let num_players: number = 6;
 	let players: Player[] = [];
@@ -68,17 +84,7 @@ function createPlayers(): Player[] {
 			type = Player_Type.HUMAN;
 		}
 
-		let player: Player = {
-			id: i,
-			hand: [],
-			money: 1000,
-			name: "player" + i,
-			type: type,
-			round_bet: 0,
-			hand_rank: null,
-			final_hand_cards: null,
-			highest_value_in_hand: null
-		}
+		let player: Player = create_player(i, type);
 		players.push(player);
 	}
 
@@ -93,12 +99,13 @@ function createPlayers(): Player[] {
 function init() {
 	console.log("init");
 	// addEventListeners();
-	deck = create_deck();
-	game.deck = deck;
+	// deck = create_deck();
+	game.deck = create_deck();
 	players = createPlayers();
 	game.players = players;
 	humanPlayer = players[0];
 	game.human = humanPlayer;
+	create_ui();
 	newHand();
 };
 
@@ -175,14 +182,26 @@ function setDefaultHandStatus() {
 	};
 };
 
-function dealCards(player: Player, numCardsToDeal: number) {
+export function deal_card(deck: Card[]): Card {
+	let cardPosInDeck = Math.floor(Math.random() * game.deck.length);
+	let card = game.deck[cardPosInDeck];
+	deck.splice(cardPosInDeck, 1);
+	return card;
+}
+
+export function deal_specific_card(deck: Card[], suit: Suit, card_type: Card_Type): Card | false {
+	for (let card of deck) {
+		if (card.suit == suit && card.value == card_type) return card;
+	}
+	
+	return false;
+}
+
+export function dealCards(player: Player, numCardsToDeal: number) {
 	let cardsDelt = 0;
 	while (cardsDelt < numCardsToDeal) {
 		cardsDelt++;
-		let cardPosInDeck = Math.floor(Math.random() * deck.length);
-		let card = deck[cardPosInDeck];
-		player.hand.push(card);
-		deck.splice(cardPosInDeck, 1);
+		player.hand.push(deal_card(game.deck));
 	}
 };
 
@@ -311,10 +330,10 @@ function dealCommunityCards(numToDeal: number) {
 	let cardsDelt = 0;
 	while (cardsDelt < numToDeal) {
 		cardsDelt++;
-		let cardPosInDeck = Math.floor(Math.random() * deck.length);
-		let card = deck[cardPosInDeck];
+		let cardPosInDeck = Math.floor(Math.random() * game.deck.length);
+		let card = game.deck[cardPosInDeck];
 		communityCards.push(card);
-		deck.splice(cardPosInDeck, 1);
+		game.deck.splice(cardPosInDeck, 1);
 	}
 };
 
@@ -474,7 +493,7 @@ function findNextPlayer(player: Player): Player {
 };
 
 function startNextPlayerTurn(player: Player) {
-	console.log("starting next players turn");
+	// console.log("starting next players turn");
 	if (player.type == Player_Type.AI) {
 		aiTurn(player);
 	} else {
@@ -570,6 +589,7 @@ function findHandWinner() {
 		let rankedHand = rankHand(player);
 		player.hand_rank = rankedHand.rank;
 		player.final_hand_cards = rankedHand.hand;
+		console.log("Player " + player.id + ": " + Hand_Rank[rankedHand.rank]);
 
 		let isBetterHand = compareRankedHands(highestRankedHand, rankedHand);
 
@@ -816,9 +836,9 @@ function rankHand(player: Player): Ranked_Hand  {
 	let hand: Card[] = player.hand;
 	hand = hand.concat(communityCards);
 
-	let highestValueInHand: number = hand[0].value;
-	let handRank: Hand_Rank;
-	let handRankText: string;
+	let highestValueInHand: number = 0;
+	let handRank: Hand_Rank = Hand_Rank.HIGH_CARD;
+	// let handRankText: string;
 
 	// hands will be ranked as
 	// highcard = 0, pair = 1, two pair = 2, three of kind = 3, straight = 4, flush = 5, fullhouse = 6,
@@ -829,47 +849,47 @@ function rankHand(player: Player): Ranked_Hand  {
 
 	if (isPair(hand)) {
 		handRank = Hand_Rank.PAIR;
-		handRankText = "Pair";
+		// handRankText = "Pair";
 	}
 
 	if (isTwoPair(hand)) {
 		handRank = Hand_Rank.TWO_PAIR;
-		handRankText = "Two Pair";
+		// handRankText = "Two Pair";
 	}
 
 	if (isThreeOfKind(hand)) {
 		handRank = Hand_Rank.THREE_OF_KIND;
-		handRankText = "Three of a kind";
+		// handRankText = "Three of a kind";
 	}
 
 	if (isStraight(hand)) {
 		handRank = Hand_Rank.STRAIGHT;
-		handRankText = "Straight";
+		// handRankText = "Straight";
 	}
 
 	if (isFlush(hand)) {
 		handRank = Hand_Rank.FLUSH;
-		handRankText = "Flush";
+		// handRankText = "Flush";
 	}
 
 	if (isFullHouse(hand)) {
 		handRank = Hand_Rank.FULL_HOUSE;
-		handRankText = "Full House";
+		// handRankText = "Full House";
 	}
 
 	if (isFourOfKind(hand)) {
 		handRank = Hand_Rank.FOUR_OF_KIND;
-		handRankText = "Four of a kind";
+		// handRankText = "Four of a kind";
 	}
 
 	if (isStraighFlush(hand)) {
 		handRank = Hand_Rank.STRAIGHT_FLUSH;
-		handRankText = "Straight Flush";
+		// handRankText = "Straight Flush";
 	}
 
 	if (isRoyalFlush(hand)) {
 		handRank = Hand_Rank.ROYAL_FLUSH;
-		handRankText = "Royal Flush";
+		// handRankText = "Royal Flush";
 	}
 
 	return {
@@ -880,7 +900,7 @@ function rankHand(player: Player): Ranked_Hand  {
 	};
 };
 
-function isRoyalFlush(hand: Card[]) {
+function isRoyalFlush(hand: Card[]): boolean {
 	hand = sortCards(hand);
 	hand = removeDuplicateValues(hand);
 
@@ -890,227 +910,101 @@ function isRoyalFlush(hand: Card[]) {
 		// check if highest card is an ace
 		if (hand[0].value == 14) {
 			if (hand[4].value == 10) {
-				hasRoyalFlush = true;
+				return true;
 			}
 		}
-
-		if (hasRoyalFlush) {
-			//log('------------------------');
-			//log('has this hand rank');
-			//log('------------------------');
-			return true;
-		} else {
-			return false;
-		}
-
 	}
+	return false;
 };
 
-function isStraighFlush(hand) {
-	//log('checking if hand is a StraighFlush');
-
-	//log(isStraight(hand))
-
-	if (isStraight(hand) && isFlush(hand)) {
-		return true;
-	} else {
-		return false;
-	}
+function isStraighFlush(hand: Card[]): boolean {
+	if (isStraight(hand) && isFlush(hand)) return true;
+	return false;
 };
 
-function isFourOfKind(hand) {
-	//log('checking if hand is a FourOfKind');
-
-	/*
-	let matches;
-	hand.forEach((card, index) => {
-	  matches = [];
-	  hand.forEach((otherCard, otherIndex) => {
-		if(card.cardValue == otherCard.cardValue && index != otherIndex) {
-		  let matched = true;
-		  matches.forEach((matchCard) => {
-			//log(card, matchCard);
-			if(card == matchCard) {
-			  matched = true;
-			}
-		  });
-  
-		  if(!matched) {
-			matches.push(card);
-		  }
-		}
-	  });
-	  });
-	*/
-
-	let hasFourOfAKind = false;
+function isFourOfKind(hand: Card[]): boolean {
 	hand.forEach((card, index) => {
 		// for each card check how many other cards their are of this cardValue
-		let cardValue = card.cardValue;
+		let cardValue = card.value;
 		let numOfValue = 0;
 
 		// check against every card in hand
 		hand.forEach((otherCard, otherIndex) => {
 			if (index != otherIndex) { // ignore counting the same card when we loop over it
-				if (cardValue == otherCard.cardValue) {
+				if (cardValue == otherCard.value) {
 					numOfValue++;
 				}
 			}
 		});
 
-		if (numOfValue >= 4) {
-			hasFourOfAKind = true;
-		}
-
+		if (numOfValue >= 4) return true;
 	});
 
-	if (hasFourOfAKind) {
-		return true;
-	} else {
-		return false;
-	}
-
-
-
-
-	//log(matches.length)
-
-	/*
-	if(matches.length >= 4) {
-	  return true;
-	} else {
-	  return false;
-	}
-	*/
+	return false;
 };
 
-function isFullHouse(hand) {
-	//log('checking if hand is a FullHouse');
-	//log(hand);
-	let pair = isPair(hand);
-	if (pair && isThreeOfKind(hand).hasRank) {
+function isFullHouse(hand: Card[]): boolean {
+	if (isPair(hand) && isThreeOfKind(hand)) {
 
-		let sameCards = 0;
-		pair.pairs.forEach((value) => {
-			if (value == isThreeOfKind(hand).value) {
-				sameCards++;
+		// check to make sure we have at least two seperate pairs
+		// otherwise the three of a kind could just be the same cards as the pair + the 3rd card
+		const pairs: Card[] = findPairs(hand);
+		if (pairs.length >= 2) return true;
+	} 
+	
+	return false;
+};
+
+function isFlush(hand: Card[]): boolean {
+	for (let i = 0; i < 4; i++) {
+		let count = 0;
+		for (let card of hand) {
+			if (card.suit == i) {
+				count++;
 			}
-		});
-
-		if (sameCards >= pair.pairs.length) {
-			console.log('using all the same cards')
 		}
-
-		return true;
-	} else {
-		return false;
+		if (count >= 5) return true;
 	}
+
+	return false;
 };
 
-function isFlush(hand) {
-	//log('checking if hand is a Flush');
-
-	let foundFlush = false;
-	suits.forEach((suit) => {
-		let numOfSuit = 0;
-		hand.forEach((card) => {
-			if (card.suit == suit) {
-				//log('found one of current suit')
-				numOfSuit++;
-			}
-		});
-
-		//log(numOfSuit)
-		if (numOfSuit >= 5) {
-			foundFlush = true;
-		}
-
-	});
-
-	if (foundFlush) {
-		return true;
-	} else {
-		return false;
-	}
-};
-
-function isStraight(hand) {
-	//log('checking if hand is a Straight');
-
+function isStraight(hand: Card[]): boolean {
 	hand = sortCards(hand);
 	hand = removeDuplicateValues(hand);
 
-	// check if hand has at least 5 cards
-	if (hand.length >= 5) {
+	if (hand.length < 5) return false;
 
-		let foundStraight = false;
-		let foundStraightMatch = true;
-		let numMatches = 0;
-		for (let i = 1; i < hand.length; i++) {
-			let card = hand[i];
-			let prevCard = hand[i - 1];
-			//log(hand.length)
-			//log(i)
-			//log(card.cardValue, prevCard.cardValue)
-			if (card.cardValue != prevCard.cardValue - 1) {
-				foundStraightMatch = false;
-				numMatches = 0; // reset to restart the count for a straight
-			} else {
-				// if is a straightMatch then
-				numMatches++;
-			}
+	let numMatches = 0;
+	for (let i = 1; i < hand.length; i++) {
+		let card = hand[i];
+		let prevCard = hand[i - 1];
 
-			//log(numMatches)
-			//log(hand)
-			if (numMatches >= 4) {
-				foundStraight = true;
-			}
-		}
+		if (card.value != prevCard.value - 1) {
+			numMatches = 0; // reset to restart the count for a straight
+		} 
+		else numMatches++;
 
-		if (foundStraight) {
+		if (numMatches == 4) {
 			return true;
-		} else {
-			return false;
 		}
 	}
+
+	return false;
 };
 
-function isThreeOfKind(hand) {
-	//log('checking if hand is a ThreeOfKind');
+function isThreeOfKind(hand: Card[]): boolean {
+	for (let card of hand) {
+		let count = 1;
 
-	let hasThreeOfAKind = false;
-	let cardValue
-	hand.forEach((card, index) => {
-		// for each card check how many other cards their are of this cardValue
-		cardValue = card.cardValue;
-		let numOfValue = 1;
-
-		// check against every card in hand
-		hand.forEach((otherCard, otherIndex) => {
-			if (index != otherIndex) { // ignore counting the same card when we loop over it
-				if (cardValue == otherCard.cardValue) {
-					numOfValue++;
-				}
-			}
-		});
-
-		if (numOfValue >= 3) {
-			hasThreeOfAKind = true;
+		for (let other_card of hand) {
+			if (card.id != other_card.id && card.value == other_card.value) count++;
 		}
 
-	});
-
-	if (hasThreeOfAKind) {
-		return {
-			hasRank: true,
-			value: cardValue
-		};
-	} else {
-		return {
-			hasRank: false,
-			value: cardValue
-		}
+		if (count == 3) return true;
 	}
+
+	return false;
 };
 
 function isTwoPair(hand: Card[]) {
@@ -1125,38 +1019,41 @@ function isTwoPair(hand: Card[]) {
 	}
 };
 
-function isPair(hand) {
+function isPair(hand: Card[]): boolean {
 	//log('checking if hand is a Pair');
 
-	let pairs = findPairs(hand);
+	// let pairs = findPairs(hand);
 
-	if (pairs.length >= 1) {
-		//log('player ' + player.name + " has one pair.");
-		return {
-			result: true,
-			pairs: pairs
-		};
-	} else {
-		return {
-			result: false,
-			pairs: pairs
-		};
-	}
+	// if (pairs.length >= 1) {
+	// 	//log('player ' + player.name + " has one pair.");
+	// 	return {
+	// 		result: true,
+	// 		pairs: pairs
+	// 	};
+	// } else {
+	// 	return {
+	// 		result: false,
+	// 		pairs: pairs
+	// 	};
+	// }
+
+	if (findPairs(hand).length > 0) return true;
+	return false;
 };
 
-function findPairs(hand) {
-	let pairs = [];
+function findPairs(hand: Card[]): Card[] {
+	let pairs: Card[] = [];
 
 	hand.forEach((card, index) => {
 		hand.forEach((otherCard, otherIndex) => {
-			if (card.cardValue == otherCard.cardValue && index != otherIndex) {
+			if (card.value == otherCard.value && index != otherIndex) {
 				// make sure we haven't already found this match
 				if (pairs.length == 0) {
 					pairs.push(card);
 				} else {
 					let match = false;
 					pairs.forEach((pairCard) => {
-						if (card.cardValue == pairCard.cardValue) {
+						if (card.value == pairCard.value) {
 							match = true;
 						}
 					});
@@ -1167,15 +1064,6 @@ function findPairs(hand) {
 			}
 		});
 	});
-
-
-	if (pairs.length > 0) {
-		//log("Player " + player.name + " has a pair(s).");
-		pairs.forEach((pair) => {
-			//log(pair);
-		});
-		//log("Player " + player.name + " 's hand:", hand);
-	}
 
 	return pairs;
 };
@@ -1221,4 +1109,13 @@ function removeDuplicateValues(hand: Card[]): Card[] {
 
 //let SH = new SimulateHand();
 
-init(); // start
+function areWeTestingWithJest() {
+    return process.env.JEST_WORKER_ID !== undefined;
+}
+
+if (areWeTestingWithJest) {
+	console.log("jest")
+} else {
+	console.log("not jest")
+	init(); // start
+}

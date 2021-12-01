@@ -7,7 +7,7 @@ export enum Suit {
 }
 
 export interface Card {
-	value: number;
+	value: Card_Type;
 	suit: Suit;
 	id: number;
 }
@@ -49,12 +49,27 @@ export enum Hand_Rank {
 	ROYAL_FLUSH
 }
 
+export enum Card_Type {
+    TWO = 2,
+    THREE,
+    FOUR,
+    FIVE,
+    SIX,
+    SEVEN,
+    EIGHT,
+    NINE,
+    TEN,
+    JACK,
+    QUEEN,
+    KING,
+    ACE
+}
+
 export interface Game {
 	deck: Card[];
 	players: Player[];
 	human: Player;
 }
-
 
 export const game: Game = {
 	deck: [],

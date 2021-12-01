@@ -148,7 +148,6 @@
   };
 
   // src/index.ts
-  var deck = [];
   var players = [];
   var roundOrder = [];
   var humanPlayer;
@@ -157,9 +156,7 @@
   var roundBetAmount = 0;
   var activePlayer;
   var startingPlayerIndex = 0;
-  var suits = ["spades", "hearts", "clubs", "diamonds"];
   var showPrivateCards = false;
-  create_ui();
   function create_deck() {
     let new_deck = [];
     let card_value = 2;
@@ -184,6 +181,20 @@
     }
     return new_deck;
   }
+  function create_player(id, type) {
+    let player = {
+      id,
+      hand: [],
+      money: 1e3,
+      name: "player" + id,
+      type,
+      round_bet: 0,
+      hand_rank: null,
+      final_hand_cards: null,
+      highest_value_in_hand: null
+    };
+    return player;
+  }
   function createPlayers() {
     let num_players = 6;
     let players2 = [];
@@ -192,29 +203,19 @@
       if (i == 0) {
         type = Player_Type.HUMAN;
       }
-      let player = {
-        id: i,
-        hand: [],
-        money: 1e3,
-        name: "player" + i,
-        type,
-        round_bet: 0,
-        hand_rank: null,
-        final_hand_cards: null,
-        highest_value_in_hand: null
-      };
+      let player = create_player(i, type);
       players2.push(player);
     }
     return players2;
   }
   function init() {
     console.log("init");
-    deck = create_deck();
-    game.deck = deck;
+    game.deck = create_deck();
     players = createPlayers();
     game.players = players;
     humanPlayer = players[0];
     game.human = humanPlayer;
+    create_ui();
     newHand();
   }
   function newHand() {
@@ -269,14 +270,24 @@
       }
     };
   }
+  function deal_card(deck) {
+    let cardPosInDeck = Math.floor(Math.random() * game.deck.length);
+    let card = game.deck[cardPosInDeck];
+    deck.splice(cardPosInDeck, 1);
+    return card;
+  }
+  function deal_specific_card(deck, suit, card_type) {
+    for (let card of deck) {
+      if (card.suit == suit && card.value == card_type)
+        return card;
+    }
+    return false;
+  }
   function dealCards(player, numCardsToDeal) {
     let cardsDelt = 0;
     while (cardsDelt < numCardsToDeal) {
       cardsDelt++;
-      let cardPosInDeck = Math.floor(Math.random() * deck.length);
-      let card = deck[cardPosInDeck];
-      player.hand.push(card);
-      deck.splice(cardPosInDeck, 1);
+      player.hand.push(deal_card(game.deck));
     }
   }
   function updatePlayerCardElems() {
@@ -379,10 +390,10 @@
     let cardsDelt = 0;
     while (cardsDelt < numToDeal) {
       cardsDelt++;
-      let cardPosInDeck = Math.floor(Math.random() * deck.length);
-      let card = deck[cardPosInDeck];
+      let cardPosInDeck = Math.floor(Math.random() * game.deck.length);
+      let card = game.deck[cardPosInDeck];
       communityCards.push(card);
-      deck.splice(cardPosInDeck, 1);
+      game.deck.splice(cardPosInDeck, 1);
     }
   }
   function startBettingRound() {
@@ -468,7 +479,6 @@
     return nextPlayer;
   }
   function startNextPlayerTurn(player) {
-    console.log("starting next players turn");
     if (player.type == Player_Type.AI) {
       aiTurn(player);
     } else {
@@ -527,6 +537,7 @@
       let rankedHand = rankHand(player);
       player.hand_rank = rankedHand.rank;
       player.final_hand_cards = rankedHand.hand;
+      console.log("Player " + player.id + ": " + Hand_Rank[rankedHand.rank]);
       let isBetterHand = compareRankedHands(highestRankedHand, rankedHand);
       if (isBetterHand) {
         highestRankedHand.rank = rankedHand.rank;
@@ -596,44 +607,34 @@
   function rankHand(player) {
     let hand = player.hand;
     hand = hand.concat(communityCards);
-    let highestValueInHand = hand[0].value;
-    let handRank;
-    let handRankText;
+    let highestValueInHand = 0;
+    let handRank = Hand_Rank.HIGH_CARD;
     if (isPair(hand)) {
       handRank = Hand_Rank.PAIR;
-      handRankText = "Pair";
     }
     if (isTwoPair(hand)) {
       handRank = Hand_Rank.TWO_PAIR;
-      handRankText = "Two Pair";
     }
     if (isThreeOfKind(hand)) {
       handRank = Hand_Rank.THREE_OF_KIND;
-      handRankText = "Three of a kind";
     }
     if (isStraight(hand)) {
       handRank = Hand_Rank.STRAIGHT;
-      handRankText = "Straight";
     }
     if (isFlush(hand)) {
       handRank = Hand_Rank.FLUSH;
-      handRankText = "Flush";
     }
     if (isFullHouse(hand)) {
       handRank = Hand_Rank.FULL_HOUSE;
-      handRankText = "Full House";
     }
     if (isFourOfKind(hand)) {
       handRank = Hand_Rank.FOUR_OF_KIND;
-      handRankText = "Four of a kind";
     }
     if (isStraighFlush(hand)) {
       handRank = Hand_Rank.STRAIGHT_FLUSH;
-      handRankText = "Straight Flush";
     }
     if (isRoyalFlush(hand)) {
       handRank = Hand_Rank.ROYAL_FLUSH;
-      handRankText = "Royal Flush";
     }
     return {
       rank: handRank,
@@ -649,136 +650,84 @@
     if (hand.length >= 5) {
       if (hand[0].value == 14) {
         if (hand[4].value == 10) {
-          hasRoyalFlush = true;
+          return true;
         }
       }
-      if (hasRoyalFlush) {
-        return true;
-      } else {
-        return false;
-      }
     }
+    return false;
   }
   function isStraighFlush(hand) {
-    if (isStraight(hand) && isFlush(hand)) {
+    if (isStraight(hand) && isFlush(hand))
       return true;
-    } else {
-      return false;
-    }
+    return false;
   }
   function isFourOfKind(hand) {
-    let hasFourOfAKind = false;
     hand.forEach((card, index) => {
-      let cardValue = card.cardValue;
+      let cardValue = card.value;
       let numOfValue = 0;
       hand.forEach((otherCard, otherIndex) => {
         if (index != otherIndex) {
-          if (cardValue == otherCard.cardValue) {
+          if (cardValue == otherCard.value) {
             numOfValue++;
           }
         }
       });
-      if (numOfValue >= 4) {
-        hasFourOfAKind = true;
-      }
+      if (numOfValue >= 4)
+        return true;
     });
-    if (hasFourOfAKind) {
-      return true;
-    } else {
-      return false;
-    }
+    return false;
   }
   function isFullHouse(hand) {
-    let pair = isPair(hand);
-    if (pair && isThreeOfKind(hand).hasRank) {
-      let sameCards = 0;
-      pair.pairs.forEach((value) => {
-        if (value == isThreeOfKind(hand).value) {
-          sameCards++;
-        }
-      });
-      if (sameCards >= pair.pairs.length) {
-        console.log("using all the same cards");
-      }
-      return true;
-    } else {
-      return false;
+    if (isPair(hand) && isThreeOfKind(hand)) {
+      const pairs = findPairs(hand);
+      if (pairs.length >= 2)
+        return true;
     }
+    return false;
   }
   function isFlush(hand) {
-    let foundFlush = false;
-    suits.forEach((suit) => {
-      let numOfSuit = 0;
-      hand.forEach((card) => {
-        if (card.suit == suit) {
-          numOfSuit++;
+    for (let i = 0; i < 4; i++) {
+      let count = 0;
+      for (let card of hand) {
+        if (card.suit == i) {
+          count++;
         }
-      });
-      if (numOfSuit >= 5) {
-        foundFlush = true;
       }
-    });
-    if (foundFlush) {
-      return true;
-    } else {
-      return false;
+      if (count >= 5)
+        return true;
     }
+    return false;
   }
   function isStraight(hand) {
     hand = sortCards(hand);
     hand = removeDuplicateValues(hand);
-    if (hand.length >= 5) {
-      let foundStraight = false;
-      let foundStraightMatch = true;
-      let numMatches = 0;
-      for (let i = 1; i < hand.length; i++) {
-        let card = hand[i];
-        let prevCard = hand[i - 1];
-        if (card.cardValue != prevCard.cardValue - 1) {
-          foundStraightMatch = false;
-          numMatches = 0;
-        } else {
-          numMatches++;
-        }
-        if (numMatches >= 4) {
-          foundStraight = true;
-        }
-      }
-      if (foundStraight) {
+    if (hand.length < 5)
+      return false;
+    let numMatches = 0;
+    for (let i = 1; i < hand.length; i++) {
+      let card = hand[i];
+      let prevCard = hand[i - 1];
+      if (card.value != prevCard.value - 1) {
+        numMatches = 0;
+      } else
+        numMatches++;
+      if (numMatches == 4) {
         return true;
-      } else {
-        return false;
       }
     }
+    return false;
   }
   function isThreeOfKind(hand) {
-    let hasThreeOfAKind = false;
-    let cardValue;
-    hand.forEach((card, index) => {
-      cardValue = card.cardValue;
-      let numOfValue = 1;
-      hand.forEach((otherCard, otherIndex) => {
-        if (index != otherIndex) {
-          if (cardValue == otherCard.cardValue) {
-            numOfValue++;
-          }
-        }
-      });
-      if (numOfValue >= 3) {
-        hasThreeOfAKind = true;
+    for (let card of hand) {
+      let count = 1;
+      for (let other_card of hand) {
+        if (card.id != other_card.id && card.value == other_card.value)
+          count++;
       }
-    });
-    if (hasThreeOfAKind) {
-      return {
-        hasRank: true,
-        value: cardValue
-      };
-    } else {
-      return {
-        hasRank: false,
-        value: cardValue
-      };
+      if (count == 3)
+        return true;
     }
+    return false;
   }
   function isTwoPair(hand) {
     let pairs = findPairs(hand);
@@ -789,30 +738,21 @@
     }
   }
   function isPair(hand) {
-    let pairs = findPairs(hand);
-    if (pairs.length >= 1) {
-      return {
-        result: true,
-        pairs
-      };
-    } else {
-      return {
-        result: false,
-        pairs
-      };
-    }
+    if (findPairs(hand).length > 0)
+      return true;
+    return false;
   }
   function findPairs(hand) {
     let pairs = [];
     hand.forEach((card, index) => {
       hand.forEach((otherCard, otherIndex) => {
-        if (card.cardValue == otherCard.cardValue && index != otherIndex) {
+        if (card.value == otherCard.value && index != otherIndex) {
           if (pairs.length == 0) {
             pairs.push(card);
           } else {
             let match = false;
             pairs.forEach((pairCard) => {
-              if (card.cardValue == pairCard.cardValue) {
+              if (card.value == pairCard.value) {
                 match = true;
               }
             });
@@ -823,10 +763,6 @@
         }
       });
     });
-    if (pairs.length > 0) {
-      pairs.forEach((pair) => {
-      });
-    }
     return pairs;
   }
   function sortCards(hand) {
@@ -853,5 +789,13 @@
     });
     return newHand2;
   }
-  init();
+  function areWeTestingWithJest() {
+    return process.env.JEST_WORKER_ID !== void 0;
+  }
+  if (areWeTestingWithJest) {
+    console.log("jest");
+  } else {
+    console.log("not jest");
+    init();
+  }
 })();
