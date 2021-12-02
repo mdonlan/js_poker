@@ -7,11 +7,11 @@ import { Card, Player } from "./Game";
 import { create_deck } from ".";
 
 export class SimulateHand { 
-	public hand;
-	public comCards;
-	public players;
-	public player;
-	public deck;
+	public hand: Card[];
+	public comCards: Card[];
+	public players: Player[];
+	public player: Player;
+	public deck: Card[];
 
 
 	constructor(hand: Card[], comCards: Card[], player: Player, players: Player[]) {
@@ -19,6 +19,7 @@ export class SimulateHand {
 		this.comCards = [...comCards];
 		this.players = JSON.parse(JSON.stringify(players));
 		this.player = JSON.parse(JSON.stringify(player));
+		this.deck = [];
 
 		this.startSim();
 	}

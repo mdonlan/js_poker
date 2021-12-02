@@ -10,5 +10,6 @@
         "watch": false,
         "jsx": "preserve",
         "skipDefaultLibCheck": true,
+        // "strict": true
     }
 }

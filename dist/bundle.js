@@ -46,12 +46,25 @@
     Hand_Rank2[Hand_Rank2["FOUR_OF_KIND"] = 7] = "FOUR_OF_KIND";
     Hand_Rank2[Hand_Rank2["STRAIGHT_FLUSH"] = 8] = "STRAIGHT_FLUSH";
     Hand_Rank2[Hand_Rank2["ROYAL_FLUSH"] = 9] = "ROYAL_FLUSH";
+    Hand_Rank2[Hand_Rank2["UNRANKED"] = 10] = "UNRANKED";
     return Hand_Rank2;
   })(Hand_Rank || {});
+  var Hand_Phase = /* @__PURE__ */ ((Hand_Phase2) => {
+    Hand_Phase2[Hand_Phase2["PREFLOP"] = 0] = "PREFLOP";
+    Hand_Phase2[Hand_Phase2["FLOP"] = 1] = "FLOP";
+    Hand_Phase2[Hand_Phase2["TURN"] = 2] = "TURN";
+    Hand_Phase2[Hand_Phase2["RIVER"] = 3] = "RIVER";
+    Hand_Phase2[Hand_Phase2["SHOWDOWN"] = 4] = "SHOWDOWN";
+    return Hand_Phase2;
+  })(Hand_Phase || {});
   var game = {
     deck: [],
     players: [],
-    human: null
+    human: null,
+    hand_phase: 0,
+    round_current_player_index: 0,
+    round_order: [],
+    active_player: null
   };
 
   // src/UI.tsx
@@ -87,6 +100,7 @@
       this.comCards = [...comCards];
       this.players = JSON.parse(JSON.stringify(players2));
       this.player = JSON.parse(JSON.stringify(player));
+      this.deck = [];
       this.startSim();
     }
     startSim() {
@@ -149,13 +163,9 @@
 
   // src/index.ts
   var players = [];
-  var roundOrder = [];
   var humanPlayer;
-  var handStatus;
   var communityCards = [];
   var roundBetAmount = 0;
-  var activePlayer;
-  var startingPlayerIndex = 0;
   var showPrivateCards = false;
   function create_deck() {
     let new_deck = [];
@@ -170,11 +180,11 @@
       };
       new_deck.push(card);
       card_value++;
-      if (card_value > 14) {
+      if (card_value == 15) {
         card_value = 2;
       }
       cards_in_suit++;
-      if (cards_in_suit > 13) {
+      if (cards_in_suit == 13) {
         current_suit++;
         cards_in_suit = 0;
       }
@@ -189,9 +199,9 @@
       name: "player" + id,
       type,
       round_bet: 0,
-      hand_rank: null,
-      final_hand_cards: null,
-      highest_value_in_hand: null
+      hand_rank: Hand_Rank.UNRANKED,
+      final_hand_cards: [],
+      highest_value_in_hand: 0
     };
     return player;
   }
@@ -223,7 +233,6 @@
     dealHand();
   }
   function resetAllHandData() {
-    setDefaultHandStatus();
     communityCards = [];
     updateCommunityCardElems();
   }
@@ -236,52 +245,22 @@
     updatePlayerCardElems();
     startBettingRound();
   }
-  function setDefaultHandStatus() {
-    handStatus = {
-      onPhase: "preflop",
-      deal: {
-        started: false,
-        inProgress: false
-      },
-      preflop: {
-        started: false,
-        inProgress: false,
-        bettingComplete: false
-      },
-      flop: {
-        started: false,
-        inProgress: false,
-        bettingComplete: false
-      },
-      turn: {
-        started: false,
-        inProgress: false,
-        bettingComplete: false
-      },
-      river: {
-        started: false,
-        inProgress: false,
-        bettingComplete: false
-      },
-      showdown: {
-        started: false,
-        inProgress: false,
-        bettingComplete: false
-      }
-    };
-  }
   function deal_card(deck) {
     let cardPosInDeck = Math.floor(Math.random() * game.deck.length);
     let card = game.deck[cardPosInDeck];
     deck.splice(cardPosInDeck, 1);
     return card;
   }
-  function deal_specific_card(deck, suit, card_type) {
-    for (let card of deck) {
-      if (card.suit == suit && card.value == card_type)
-        return card;
+  function dev_deal_cards(deck, cards_to_deal) {
+    const cards = [];
+    for (let card_info of cards_to_deal) {
+      for (let card of deck) {
+        if (card.suit == card_info.suit && card.value == card_info.type) {
+          cards.push(card);
+        }
+      }
     }
-    return false;
+    return cards;
   }
   function dealCards(player, numCardsToDeal) {
     let cardsDelt = 0;
@@ -293,7 +272,10 @@
   function updatePlayerCardElems() {
     players.forEach((player) => {
       let playerElem = document.querySelector("." + player.name);
-      let children = Array.from(playerElem.children);
+      let children = [];
+      if (playerElem) {
+        children = Array.from(playerElem.children);
+      }
       children.forEach((cardElem) => {
         if (cardElem.classList.contains("cards")) {
           let cards = Array.from(cardElem.children);
@@ -371,16 +353,17 @@
     }
   }
   function updateCommunityCards() {
-    switch (handStatus.onPhase) {
-      case "preflop":
+    console.log("update community cards -- phase=" + game.hand_phase);
+    switch (game.hand_phase) {
+      case Hand_Phase.PREFLOP:
         break;
-      case "flop":
+      case Hand_Phase.FLOP:
         dealCommunityCards(3);
         break;
-      case "turn":
+      case Hand_Phase.TURN:
         dealCommunityCards(1);
         break;
-      case "river":
+      case Hand_Phase.RIVER:
         dealCommunityCards(1);
         break;
     }
@@ -397,21 +380,17 @@
     }
   }
   function startBettingRound() {
-    let onPlayerIndex = startingPlayerIndex;
-    let lastPlayerIndex = onPlayerIndex - 1;
-    if (lastPlayerIndex < 0) {
-      lastPlayerIndex = players.length - 1;
-    }
-    let firstPlayerInRound = players[onPlayerIndex];
-    let lastPlayerInRound = players[lastPlayerIndex];
-    createRoundOrder(onPlayerIndex);
-    activePlayer = firstPlayerInRound;
+    console.log("starting hand phase: " + game.hand_phase);
+    createRoundOrder(0);
     updateCommunityCards();
-    startNextPlayerTurn(activePlayer);
+    startNextPlayerTurn(game.active_player);
   }
   function updateCommunityCardElems() {
     let communityCardsElem = document.querySelector(".community_cards");
-    let communityCardsArr = Array.from(communityCardsElem.children);
+    let communityCardsArr = [];
+    if (communityCardsElem) {
+      communityCardsArr = Array.from(communityCardsElem.children);
+    }
     if (communityCards.length == 0) {
       communityCardsArr.forEach((cardElem, index) => {
         cardElem.innerHTML = "";
@@ -431,23 +410,29 @@
     endTurn(player, false);
   }
   function humanTurn(player) {
+    console.log("starting human turn for player " + player.name);
     toggleBetHumanOptions();
     betOrCall();
   }
   function betOrCall() {
     let betElem = document.querySelector(".bet");
-    if (roundBetAmount > 0) {
-      betElem.innerHTML = "Call";
-      setBetAmountToMin();
-    } else {
-      betElem.innerHTML = "Bet";
+    if (betElem) {
+      if (roundBetAmount > 0) {
+        betElem.innerHTML = "Call";
+        setBetAmountToMin();
+      } else {
+        betElem.innerHTML = "Bet";
+      }
     }
   }
   function setBetAmountToMin() {
     let betAmountElem = document.querySelector(".bet_amount");
-    betAmountElem.innerHTML = roundBetAmount.toString();
+    if (betAmountElem) {
+      betAmountElem.innerHTML = roundBetAmount.toString();
+    }
   }
   function endTurn(player, newBetHasBeenPlaced) {
+    console.log("ending turn for player: " + player.id);
     if (player.type == Player_Type.HUMAN) {
       toggleBetHumanOptions();
     }
@@ -458,27 +443,28 @@
       if (roundComplete) {
         endOfRound();
       } else {
-        let nextPlayer = findNextPlayer(player);
-        startNextPlayerTurn(nextPlayer);
+        const next_player = findNextPlayer();
+        console.log("next_player: " + next_player.id);
+        startNextPlayerTurn(next_player);
       }
     }
   }
   function checkIfRoundComplete(player) {
-    if (player == roundOrder[roundOrder.length - 1]) {
+    if (player == game.round_order[game.round_order.length - 1]) {
       return true;
     }
     return false;
   }
-  function findNextPlayer(player) {
-    let nextPlayer;
-    roundOrder.forEach((thisPlayer, index) => {
-      if (player == thisPlayer) {
-        nextPlayer = roundOrder[index + 1];
-      }
-    });
-    return nextPlayer;
+  function findNextPlayer() {
+    console.log("finding next player");
+    game.round_current_player_index++;
+    console.log(game.round_order);
+    const next_player = game.round_order[game.round_current_player_index];
+    console.log("next_player=" + next_player.id);
+    return next_player;
   }
   function startNextPlayerTurn(player) {
+    console.log("starting next players turn for player: " + player.id);
     if (player.type == Player_Type.AI) {
       aiTurn(player);
     } else {
@@ -486,25 +472,26 @@
     }
   }
   function endOfRound() {
+    console.log("end of round: " + game.hand_phase);
     showPrivateCards = false;
-    switch (handStatus.onPhase) {
-      case "preflop":
-        handStatus.onPhase = "flop";
+    switch (game.hand_phase) {
+      case Hand_Phase.PREFLOP:
+        game.hand_phase = Hand_Phase.FLOP;
         startBettingRound();
         break;
-      case "flop":
-        handStatus.onPhase = "turn";
+      case Hand_Phase.FLOP:
+        game.hand_phase = Hand_Phase.TURN;
         startBettingRound();
         break;
-      case "turn":
-        handStatus.onPhase = "river";
+      case Hand_Phase.TURN:
+        game.hand_phase = Hand_Phase.RIVER;
         startBettingRound();
         break;
-      case "river":
-        handStatus.onPhase = "showdown";
+      case Hand_Phase.RIVER:
+        game.hand_phase = Hand_Phase.SHOWDOWN;
         endOfRound();
         break;
-      case "showdown":
+      case Hand_Phase.SHOWDOWN:
         showPrivateCards = true;
         updatePlayerCardElems();
         findHandWinner();
@@ -527,82 +514,88 @@
     return false;
   }
   function findHandWinner() {
-    let highestRankedHand = {
-      rank: null,
-      player: null,
-      highest_value_in_hand: null,
-      hand: null
-    };
+    let highestRankedHand = rankHand(players[0]);
     players.forEach((player) => {
       let rankedHand = rankHand(player);
       player.hand_rank = rankedHand.rank;
       player.final_hand_cards = rankedHand.hand;
       console.log("Player " + player.id + ": " + Hand_Rank[rankedHand.rank]);
-      let isBetterHand = compareRankedHands(highestRankedHand, rankedHand);
-      if (isBetterHand) {
-        highestRankedHand.rank = rankedHand.rank;
-        highestRankedHand.player = player;
-        highestRankedHand.highest_value_in_hand = rankedHand.highest_value_in_hand;
+      if (highestRankedHand == void 0)
+        highestRankedHand = rankedHand;
+      else {
+        let isBetterHand = compareRankedHands(highestRankedHand, rankedHand);
+        if (isBetterHand)
+          highestRankedHand = rankedHand;
       }
       displayFinalHand(player);
     });
     let winnerElem = document.querySelector(".winner");
-    winnerElem.innerHTML = highestRankedHand.player.name + "wins the hand!";
-    console.log(highestRankedHand);
+    if (winnerElem) {
+      winnerElem.innerHTML = highestRankedHand.player.name + "wins the hand!";
+      console.log(highestRankedHand);
+    }
   }
   function displayFinalHand(player) {
     let playerElem = document.querySelector("." + player.name);
-    let children = Array.from(playerElem.children);
-    children.forEach((child) => {
-      if (child.classList.contains("final_hand")) {
-        let finalHandElem = child;
-        let finalHandElemChildren = Array.from(finalHandElem.children);
-        finalHandElemChildren.forEach((elem2, index) => {
-          if (index == 0) {
-            elem2.innerHTML = "RANK: " + player.hand_rank;
-          } else if (index == 1) {
-            let finalHandCardsElem = elem2;
-            player.final_hand_cards.forEach((card) => {
-              let imageElem = getCardImage(elem2, card.value, card.suit, true);
-              finalHandCardsElem.innerHTML = finalHandCardsElem.innerHTML + imageElem;
-            });
-          }
-        });
-      }
-    });
+    if (playerElem) {
+      let children = Array.from(playerElem.children);
+      children.forEach((child) => {
+        if (child.classList.contains("final_hand")) {
+          let finalHandElem = child;
+          let finalHandElemChildren = Array.from(finalHandElem.children);
+          finalHandElemChildren.forEach((elem2, index) => {
+            if (index == 0) {
+              elem2.innerHTML = "RANK: " + player.hand_rank;
+            } else if (index == 1) {
+              let finalHandCardsElem = elem2;
+              player.final_hand_cards.forEach((card) => {
+                let imageElem = getCardImage(elem2, card.value, card.suit, true);
+                finalHandCardsElem.innerHTML = finalHandCardsElem.innerHTML + imageElem;
+              });
+            }
+          });
+        }
+      });
+    }
   }
   function toggleDealNewHandButton() {
     let betOptionsElem = document.querySelector(".deal_new_hand_button");
-    betOptionsElem.classList.toggle("deal_new_hand_button_hidden");
+    if (betOptionsElem) {
+      betOptionsElem.classList.toggle("deal_new_hand_button_hidden");
+    }
     let endOfHandElem = document.querySelector(".end_of_hand");
-    endOfHandElem.classList.toggle("end_of_hand_show");
+    if (endOfHandElem) {
+      endOfHandElem.classList.toggle("end_of_hand_show");
+    }
   }
   function createRoundOrder(startingIndex) {
     let start = players.slice(startingIndex);
     let end = players.slice(0, startingIndex);
-    roundOrder = start.concat(end);
+    game.round_order = start.concat(end);
+    game.round_current_player_index = 0;
+    game.active_player = game.round_order[0];
   }
   function toggleBetHumanOptions() {
     let betOptionsElem = document.querySelector(".bet_options");
-    betOptionsElem.classList.toggle("bet_options_show");
+    if (betOptionsElem) {
+      betOptionsElem.classList.toggle("bet_options_show");
+    }
   }
   function setNewRoundOrderAfterBet(player) {
-    let nextPlayer = findNextPlayer(player);
+    let nextPlayer = findNextPlayer();
+    console.log("next_player: " + nextPlayer.id);
     let nextPlayerIndex = getPlayerRoundIndex(nextPlayer);
-    startingPlayerIndex = nextPlayerIndex;
-    activePlayer = nextPlayer;
-    createRoundOrder(startingPlayerIndex);
-    roundOrder = roundOrder.slice(0, roundOrder.length - 1);
-    startNextPlayerTurn(activePlayer);
+    createRoundOrder(nextPlayerIndex);
+    game.round_order = game.round_order.slice(0, game.round_order.length - 1);
+    startNextPlayerTurn(game.active_player);
   }
   function getPlayerRoundIndex(player) {
-    let roundIndex;
-    roundOrder.forEach((thisPlayer, index) => {
-      if (player == thisPlayer) {
-        roundIndex = index;
-      }
-    });
-    return roundIndex;
+    let index = 0;
+    for (let i = 0; i < game.round_order.length; i++) {
+      if (game.round_order[i].id == player.id)
+        return i;
+    }
+    return index;
   }
   function rankHand(player) {
     let hand = player.hand;
@@ -686,16 +679,18 @@
     return false;
   }
   function isFlush(hand) {
-    for (let i = 0; i < 4; i++) {
-      let count = 0;
-      for (let card of hand) {
-        if (card.suit == i) {
-          count++;
-        }
+    let count = 0;
+    let suit = null;
+    for (let card of hand) {
+      if (card.suit == suit)
+        count++;
+      else {
+        suit = card.suit;
+        count = 1;
       }
-      if (count >= 5)
-        return true;
     }
+    if (count >= 5)
+      return true;
     return false;
   }
   function isStraight(hand) {
@@ -789,10 +784,7 @@
     });
     return newHand2;
   }
-  function areWeTestingWithJest() {
-    return process.env.JEST_WORKER_ID !== void 0;
-  }
-  if (areWeTestingWithJest) {
+  if (typeof jest !== "undefined") {
     console.log("jest");
   } else {
     console.log("not jest");

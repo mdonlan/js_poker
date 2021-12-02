@@ -1,4 +1,5 @@
 
+
 export enum Suit {
 	HEARTS,
 	SPADES,
@@ -46,7 +47,8 @@ export enum Hand_Rank {
 	FULL_HOUSE,
 	FOUR_OF_KIND,
 	STRAIGHT_FLUSH,
-	ROYAL_FLUSH
+	ROYAL_FLUSH,
+	UNRANKED
 }
 
 export enum Card_Type {
@@ -65,14 +67,49 @@ export enum Card_Type {
     ACE
 }
 
+export enum Hand_Phase {
+	PREFLOP,
+	FLOP,
+	TURN,
+	RIVER,
+	SHOWDOWN
+}
+
+
+// export interface Phase {
+// 	started: boolean;
+// 	in_progress: boolean,
+// 	betting_complete: false
+// }
+
+// export interface Hand_Status {
+// 	on_phase: Hand_Phase,
+// 	deal: Phase;
+// 	preflop: Phase;
+// 	flop: Phase,
+// 	turn: Phase,
+// 	river: Phase,
+// 	showdown: Phase
+// }
+
 export interface Game {
 	deck: Card[];
 	players: Player[];
-	human: Player;
+	human: Player | null;
+	hand_phase: Hand_Phase;
+	round_current_player_index: number;
+	// round_start_player_index: number;
+	active_player: Player | null;
+	round_order: Player[];
 }
 
 export const game: Game = {
 	deck: [],
 	players: [],
-	human: null
+	human: null,
+	hand_phase: Hand_Phase.PREFLOP,
+	round_current_player_index: 0,
+	// round_start_player_index: 0,
+	round_order: [],
+	active_player: null
 };
