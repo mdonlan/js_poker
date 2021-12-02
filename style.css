@@ -1,6 +1,6 @@
 :root {
   /* global scope css vars */
-  --playerSize: 30%; 
+  --playerSize: 32%; 
 }
 
 html, body {
@@ -67,6 +67,8 @@ html, body {
 .card {
   width: 20%;
   height: 100%;
+  margin-left: 1px;
+  margin-right: 1px;
 }
 
 /* card Image */
@@ -100,6 +102,16 @@ html, body {
   opacity: 0.5;
 }
 
+.best_cards {
+  top: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  /* opacity: 0.5; */
+}
+
 .final_card_image {
   height: 100%;
   width: 10%;
@@ -117,18 +129,18 @@ html, body {
 .player1 {
   position: absolute;
   top: calc(60%);
-  left: calc(5%);
+  left: calc(0%);
 }
 
 .player2 {
   position: absolute;
   top: calc(20%);
-  left: calc(5%);
+  left: calc(0%);
 }
 
 .player3 {
   position: absolute;
-  top: 5%;
+  top: 3%;
 }
 
 .player4 {
@@ -227,7 +239,7 @@ html, body {
   position: absolute;
   height: 100px;
   width: 300px;
-  top: calc(50% - 50px);
+  top: calc(50% + 75px);
   left: calc(50% - 150px);
   z-index: 3;
   display: flex;
@@ -248,7 +260,12 @@ html, body {
 }
 
 .deal_new_hand_button {
-  
+  background:rgb(8, 51, 31);
+  padding: 5px;
+}
+
+.deal_new_hand_button:hover {
+  background:rgb(13, 82, 49);
 }
 
 .deal_new_hand_button_hidden {

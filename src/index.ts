@@ -11,23 +11,23 @@ interface Card_Info {
 	type: Card_Type;
 }
 
-
-// let deck: Card[] = [];
-let players: Player[] = [];
-
-// let roundOrder: Player[] = [];
+// let players: Player[] = [];
 let humanPlayer: Player;
-// let handStatus;
 let communityCards: Card[] = [];
 let roundBetAmount = 0;
-// let activePlayer;
-// let startingPlayerIndex = 0;
 let suits = ["spades", "hearts", "clubs", "diamonds"];
 let showPrivateCards = false; // whether the ai players cards should be displayed
 
 
 
+// utils
+function el(query: string) {
+	return document.querySelector(query);
+}
 
+function child_el(target: Element, query: string) {
+	return target.querySelector(query);
+}
 
 
 
@@ -70,6 +70,7 @@ export function create_player(id: number, type: Player_Type): Player {
 		round_bet: 0,
 		hand_rank: Hand_Rank.UNRANKED,
 		final_hand_cards: [],
+		best_cards: [],
 		highest_value_in_hand: 0
 	}
 
@@ -104,9 +105,8 @@ function init() {
 	// addEventListeners();
 	// deck = create_deck();
 	game.deck = create_deck();
-	players = createPlayers();
-	game.players = players;
-	humanPlayer = players[0];
+	game.players = createPlayers();
+	humanPlayer = game.players[0];
 	game.human = humanPlayer;
 	create_ui();
 	newHand();
@@ -142,7 +142,7 @@ function dealHand() {
 
 	// deal a new hand
 
-	players.forEach((player) => {
+	game.players.forEach((player) => {
 		player.hand = <Card[]>[];
 		player.final_hand_cards = <Card[]>[];
 		dealCards(player, 2);
@@ -230,7 +230,7 @@ export function dealCards(player: Player, numCardsToDeal: number) {
 function updatePlayerCardElems() {
 	// after dealing update the DOM elems to show the players cards
 
-	players.forEach((player) => {
+	game.players.forEach((player) => {
 		let playerElem: Element | null = document.querySelector("." + player.name);
 		let children: Element[] = [];
 		if (playerElem) {
@@ -250,11 +250,11 @@ function updatePlayerCardElems() {
 						//cardElem.innerHTML = player.hand[0].cardValue + player.hand[0].suit;
 
 						if (player.name == "player0") {
-							getCardImage(card, player.hand[0].value, player.hand[0].suit, false);
+							card.innerHTML = getCardImage(player.hand[0].value, player.hand[0].suit, false);
 						} else {
 							// create the card image
 							if (showPrivateCards) {
-								getCardImage(card, player.hand[0].value, player.hand[0].suit, false);
+								card.innerHTML = getCardImage(player.hand[0].value, player.hand[0].suit, false);
 							} else {
 								getBackCard(card);
 							}
@@ -266,11 +266,11 @@ function updatePlayerCardElems() {
 						//cardElem.innerHTML = player.hand[1].cardValue + player.hand[1].suit;
 
 						if (player.name == "player0") {
-							getCardImage(card, player.hand[1].value, player.hand[1].suit, false);
+							card.innerHTML = getCardImage(player.hand[1].value, player.hand[1].suit, false);
 						} else {
 							// create the card image
 							if (showPrivateCards) {
-								getCardImage(card, player.hand[1].value, player.hand[1].suit, false);
+								card.innerHTML = getCardImage(player.hand[1].value, player.hand[1].suit, false);
 							} else {
 								getBackCard(card);
 							}
@@ -287,7 +287,7 @@ function getBackCard(card: Element) {
 	card.innerHTML = image;
 };
 
-function getCardImage(elem: Element, cardValue: number | string, suit: Suit, isFinalCards: boolean) {
+function getCardImage(cardValue: number | string, suit: Suit, isFinalCards: boolean) {
 
 	switch (cardValue) {
 		case 14:
@@ -329,7 +329,8 @@ function getCardImage(elem: Element, cardValue: number | string, suit: Suit, isF
 		return image;
 	} else {
 		let image = "<img class='card_image' src='./assets/deck/" + imageName + "'>";
-		elem.innerHTML = image;
+		return image;
+		// elem.innerHTML = image;
 	}
 };
 
@@ -420,7 +421,7 @@ function updateCommunityCardElems() {
 				if (i == index) {
 					// matched the correct elem index to the array of cards index
 					//cardElem.innerHTML = card.cardValue + card.suit;
-					getCardImage(cardElem, card.value, card.suit, false);
+					cardElem.innerHTML = getCardImage(card.value, card.suit, false);
 				}
 			})
 		});
@@ -441,7 +442,7 @@ function aiTurn(player: Player) {
 	//rankHand(player);
 
 	// attempt to simulate the hand
-	let simHand = new SimulateHand(player.hand, communityCards, player, players);
+	let simHand = new SimulateHand(player.hand, communityCards, player, game.players);
 
 
 	endTurn(player, false);
@@ -609,12 +610,12 @@ function compareRankedHands(highestRankedHand: Ranked_Hand, rankedHand: Ranked_H
 };
 
 function findHandWinner() {
-	let highestRankedHand: Ranked_Hand = rankHand(players[0]); // do this to avoid unassigned var error, FIX??
+	let highestRankedHand: Ranked_Hand = rankHand(game.players[0]); // do this to avoid unassigned var error, FIX??
 	
 	// get the hand ranks for each player
 	// then compare it to the highest ranked hand in the current hand
 	// and see if it is higher and if so set them as new winning player
-	players.forEach((player) => {
+	game.players.forEach((player) => {
 		let rankedHand = rankHand(player);
 		player.hand_rank = rankedHand.rank;
 		player.final_hand_cards = rankedHand.hand;
@@ -626,7 +627,7 @@ function findHandWinner() {
 			if (isBetterHand) highestRankedHand = rankedHand;
 		}
 
-		
+		find_five_used_cards();
 
 		displayFinalHand(player);
 	});
@@ -653,36 +654,55 @@ function clearFinalHand(player: Player) {
 	}
 };
 
+
+
 function displayFinalHand(player: Player) {
 
 	// at then end of a hand update the dom with all active players
 	// final hands and ranks
 
-	let playerElem = document.querySelector("." + player.name);
-	if (playerElem) {
-		let children = Array.from(playerElem.children);
-		children.forEach((child) => {
-			if (child.classList.contains("final_hand")) {
-				let finalHandElem = child;
-				let finalHandElemChildren = Array.from(finalHandElem.children);
+	const player_el = el(`.${player.name}`)
 
-				finalHandElemChildren.forEach((elem, index) => {
-					if (index == 0) {
-						// set final hand player rank
-						elem.innerHTML = "RANK: " + player.hand_rank;
-					} else if (index == 1) {
-						let finalHandCardsElem = elem;
+	const hand_rank_el = child_el(player_el, ".hand_rank");
+	hand_rank_el.innerHTML = "Rank: " + Hand_Rank[player.hand_rank];
 
-						// set final player hand, including community cards
-						player.final_hand_cards.forEach((card) => {
-							let imageElem = getCardImage(elem, card.value, card.suit, true);
-							finalHandCardsElem.innerHTML = finalHandCardsElem.innerHTML + imageElem;
-						});
-					}
-				});
-			}
-		});
+	const final_cards_el = child_el(player_el, ".final_hand_cards");
+	for (let card of player.final_hand_cards) {
+		let imageElem = getCardImage(card.value, card.suit, true);
+		final_cards_el.innerHTML += imageElem;	
 	}
+
+	const best_cards_el = child_el(player_el, ".best_cards");
+	for (let card of player.best_cards) {
+		let imageElem = getCardImage(card.value, card.suit, true);
+		best_cards_el.innerHTML += imageElem;	
+	}
+
+	// let playerElem = document.querySelector("." + player.name);
+	// if (playerElem) {
+	// 	let children = Array.from(playerElem.children);
+	// 	children.forEach((child) => {
+	// 		if (child.classList.contains("final_hand")) {
+	// 			let finalHandElem = child;
+	// 			let finalHandElemChildren = Array.from(finalHandElem.children);
+
+	// 			finalHandElemChildren.forEach((elem, index) => {
+	// 				if (index == 0) {
+	// 					// set final hand player rank
+	// 					elem.innerHTML = "RANK: " + player.hand_rank;
+	// 				} else if (index == 1) {
+	// 					let finalHandCardsElem = elem;
+
+	// 					// set final player hand, including community cards
+	// 					player.final_hand_cards.forEach((card) => {
+	// 						let imageElem = getCardImage(elem, card.value, card.suit, true);
+	// 						finalHandCardsElem.innerHTML = finalHandCardsElem.innerHTML + imageElem;
+	// 					});
+	// 				}
+	// 			});
+	// 		}
+	// 	});
+	// }
 };
 
 function toggleDealNewHandButton() {
@@ -700,7 +720,7 @@ function dealNewHand() {
 	console.log('dealing new hand...');
 
 	dealHand();
-	players.forEach((player) => {
+	game.players.forEach((player) => {
 		clearFinalHand(player);
 	});
 	toggleDealNewHandButton();
@@ -708,8 +728,8 @@ function dealNewHand() {
 
 function createRoundOrder(startingIndex: number): void {
 	// reorder the players array into the correct order for this betting round
-	let start = players.slice(startingIndex);
-	let end = players.slice(0, startingIndex);
+	let start = game.players.slice(startingIndex);
+	let end = game.players.slice(0, startingIndex);
 	game.round_order = start.concat(end);
 	game.round_current_player_index = 0;
 	game.active_player = game.round_order[0]
@@ -774,7 +794,7 @@ function betInputHandler(e: KeyboardEvent) {
 					e.preventDefault(); // prevent newest input if less than minBet
 				} else {
 					// set to player max bet
-					let maxBet = players[0].money;
+					let maxBet = game.players[0].money;
 					//log(maxBet)
 					e.target.innerHTML = maxBet.toString();
 					e.preventDefault(); // prevent newest input if more than player money
@@ -790,7 +810,7 @@ function betInputHandler(e: KeyboardEvent) {
 function checkValidBet(tempBetAmount: number) {
 	// make sure the human player has entered a valid bet that is <= their money && >= minBet
 
-	if (tempBetAmount <= players[0].money && tempBetAmount > roundBetAmount) {
+	if (tempBetAmount <= game.players[0].money && tempBetAmount > roundBetAmount) {
 		return true;
 	} else {
 		return false;
@@ -801,7 +821,7 @@ function setToMaxBet() {
 	// the amount entered in betAmount was too high, setting to the max possible bet
 	//log('setting to max bet');
 
-	let maxBet = players[0].money;
+	let maxBet = game.players[0].money;
 };
 
 function betPlaced(betAmount: number) {
@@ -1137,7 +1157,33 @@ function removeDuplicateValues(hand: Card[]): Card[] {
 	return newHand;
 };
 
-
+// keep this seperate from handRank func
+function find_five_used_cards() {
+	for (let player of game.players) {
+		switch(player.hand_rank) {
+			case Hand_Rank.HIGH_CARD: {
+				player.best_cards = player.final_hand_cards.slice(0, 5);
+				break;
+			}
+			case Hand_Rank.PAIR: {
+				const pairs = findPairs(player.final_hand_cards);
+				for (let card of player.final_hand_cards) {
+					if (card.value == pairs[0].value) {
+						player.best_cards.push(card);
+					}
+				}
+				let index = 0;
+				while (player.best_cards.length < 5) {
+					if (player.final_hand_cards[index].value != pairs[0].value) {
+						player.best_cards.push(player.final_hand_cards[index]);
+					}
+					index++;
+				}
+				break;
+			}
+		}
+	}
+}
 
 
 //let SH = new SimulateHand();
