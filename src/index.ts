@@ -101,7 +101,7 @@ function createPlayers(): Player[] {
 // }
 
 function init() {
-	console.log("init");
+	// console.log("init");
 	// addEventListeners();
 	// deck = create_deck();
 	game.deck = create_deck();
@@ -145,7 +145,17 @@ function dealHand() {
 	game.players.forEach((player) => {
 		player.hand = <Card[]>[];
 		player.final_hand_cards = <Card[]>[];
-		dealCards(player, 2);
+		if (player.type == Player_Type.HUMAN) {
+			player.hand.push(...dev_deal_cards(game.deck, [
+				{suit: Suit.HEARTS, type: Card_Type.TWO},
+				{suit: Suit.HEARTS, type: Card_Type.THREE},
+				{suit: Suit.HEARTS, type: Card_Type.FOUR},
+				{suit: Suit.HEARTS, type: Card_Type.FIVE},
+				{suit: Suit.HEARTS, type: Card_Type.SIX}
+			]));
+		} else {
+			dealCards(player, 2);
+		}
 	});
 
 	updatePlayerCardElems();
@@ -335,7 +345,7 @@ function getCardImage(cardValue: number | string, suit: Suit, isFinalCards: bool
 };
 
 function updateCommunityCards() {
-	console.log("update community cards -- phase=" + game.hand_phase);
+	// console.log("update community cards -- phase=" + game.hand_phase);
 	switch (game.hand_phase) {
 		case Hand_Phase.PREFLOP:
 			break;
@@ -365,7 +375,7 @@ function dealCommunityCards(numToDeal: number) {
 };
 
 function startBettingRound() {
-	console.log("starting hand phase: " + game.hand_phase);
+	// console.log("starting hand phase: " + game.hand_phase);
 	// console.log('starting the ' + handStatus.onPhase + " round");
 	// starts the round of betting with whichever player is supposed to open the betting
 
@@ -450,7 +460,7 @@ function aiTurn(player: Player) {
 
 function humanTurn(player: Player) {
 	// the human players betting action
-	console.log('starting human turn for player ' + player.name);
+	// console.log('starting human turn for player ' + player.name);
 	toggleBetHumanOptions();
 	betOrCall();
 
@@ -484,7 +494,7 @@ function setBetAmountToMin() {
 
 export function endTurn(player: Player, newBetHasBeenPlaced: boolean) {
 	// do end of turn logic here
-	console.log("ending turn for player: " + player.id)
+	// console.log("ending turn for player: " + player.id)
 	if (player.type == Player_Type.HUMAN) {
 		toggleBetHumanOptions();
 	}
@@ -500,7 +510,7 @@ export function endTurn(player: Player, newBetHasBeenPlaced: boolean) {
 		} else {
 			// if not the end of round then move on to the next player
 			const next_player = findNextPlayer();
-			console.log("next_player: " + next_player.id)
+			// console.log("next_player: " + next_player.id)
 			startNextPlayerTurn(next_player);
 		}
 	}
@@ -519,16 +529,16 @@ function checkIfRoundComplete(player: Player): boolean {
 };
 
 function findNextPlayer(): Player {
-	console.log("finding next player")
+	// console.log("finding next player")
 	game.round_current_player_index++;
-	console.log(game.round_order)
+	// console.log(game.round_order)
 	const next_player: Player = game.round_order[game.round_current_player_index];
-	console.log("next_player=" + next_player.id)
+	// console.log("next_player=" + next_player.id)
 	return next_player;
 };
 
 function startNextPlayerTurn(player: Player) {
-	console.log("starting next players turn for player: " + player.id);
+	// console.log("starting next players turn for player: " + player.id);
 	if (player.type == Player_Type.AI) {
 		aiTurn(player);
 	} else {
@@ -538,7 +548,7 @@ function startNextPlayerTurn(player: Player) {
 
 function endOfRound() {
 	// the current betting round has ended, move on to the next betting round / determine winner
-	console.log("end of round: " + game.hand_phase);
+	// console.log("end of round: " + game.hand_phase);
 	showPrivateCards = false; // make sure not to show the ai players cards, unless it is end of hand
 	
 	switch (game.hand_phase) {
@@ -619,7 +629,7 @@ function findHandWinner() {
 		let rankedHand = rankHand(player);
 		player.hand_rank = rankedHand.rank;
 		player.final_hand_cards = rankedHand.hand;
-		console.log("Player " + player.id + ": " + Hand_Rank[rankedHand.rank]);
+		// console.log("Player " + player.id + ": " + Hand_Rank[rankedHand.rank]);
 
 		if (highestRankedHand == undefined) highestRankedHand = rankedHand;
 		else {
@@ -627,7 +637,7 @@ function findHandWinner() {
 			if (isBetterHand) highestRankedHand = rankedHand;
 		}
 
-		find_five_used_cards();
+		find_five_used_cards(player);
 
 		displayFinalHand(player);
 	});
@@ -635,7 +645,7 @@ function findHandWinner() {
 	let winnerElem: Element | null = document.querySelector(".winner");
 	if (winnerElem) {
 		winnerElem.innerHTML = highestRankedHand.player.name + "wins the hand!";
-		console.log(highestRankedHand);
+		// console.log(highestRankedHand);
 	}
 
 };
@@ -647,7 +657,7 @@ function clearFinalHand(player: Player) {
 		children.forEach((child) => {
 			if (child.classList.contains("final_hand")) {
 				let finalHandElem = child;
-				console.log(finalHandElem)
+				// console.log(finalHandElem)
 				finalHandElem.innerHTML = "";
 			}
 		});
@@ -717,7 +727,7 @@ function toggleDealNewHandButton() {
 };
 
 function dealNewHand() {
-	console.log('dealing new hand...');
+	// console.log('dealing new hand...');
 
 	dealHand();
 	game.players.forEach((player) => {
@@ -855,7 +865,7 @@ function setNewRoundOrderAfterBet(player: Player) {
 	//find the next player and start a new round of betting w/ them
 
 	let nextPlayer = findNextPlayer();
-	console.log("next_player: " + nextPlayer.id)
+	// console.log("next_player: " + nextPlayer.id)
 	// get their index and set it to the startingPlayerIndex
 	// this is used for the next round to determine where the betting should start
 	// we want betting to start on the last player to bet
@@ -919,7 +929,7 @@ export function rankHand(player: Player): Ranked_Hand  {
 		// handRankText = "Straight";
 	}
 
-	if (isFlush(hand)) {
+	if (get_flush_cards(hand)) {
 		handRank = Hand_Rank.FLUSH;
 		// handRankText = "Flush";
 	}
@@ -929,7 +939,7 @@ export function rankHand(player: Player): Ranked_Hand  {
 		// handRankText = "Full House";
 	}
 
-	if (isFourOfKind(hand)) {
+	if (get_four_of_kind_cards(hand)) {
 		handRank = Hand_Rank.FOUR_OF_KIND;
 		// handRankText = "Four of a kind";
 	}
@@ -970,7 +980,7 @@ function isRoyalFlush(hand: Card[]): boolean {
 };
 
 function isStraighFlush(hand: Card[]): boolean {
-	if (isStraight(hand) && isFlush(hand)) return true;
+	if (get_straight_cards(hand) && get_flush_cards(hand)) return true;
 	return false;
 };
 
@@ -1157,30 +1167,246 @@ function removeDuplicateValues(hand: Card[]): Card[] {
 	return newHand;
 };
 
+function get_cards_with_value(hand: Card[], value: Card_Type): Card[] {
+	const cards: Card[] = [];
+	for (let card of hand) {
+		if (card.value == value) cards.push(card);
+	}
+
+	return cards;
+}
+
+function get_highest_non_matching_cards(hand: Card[], values: Card_Type[]): Card[] {
+	// let index = 0;
+	// while (player.best_cards.length < 5) {
+	// 	if (player.final_hand_cards[index].value != pairs[0].value) {
+	// 		player.best_cards.push(player.final_hand_cards[index]);
+	// 	}
+	// 	index++;
+	// }
+	const cards: Card[] = [];
+	for (let card of hand) {
+		let match: boolean = false;
+		for (let value of values) {
+			if (card.value == value) match = true;
+		}
+		if (!match) cards.push(card);
+	}
+	
+	return cards;
+}
+
+function get_three_of_kind_cards(hand: Card[]): Card[] | false {
+	for (let card of hand) {
+		const temp_cards: Card[] = [];
+
+		for (let other_card of hand) {
+			if (card.value == other_card.value) temp_cards.push(other_card);
+		}
+
+		if (temp_cards.length == 3) {
+			return temp_cards;
+		}
+	}
+
+	return false;
+}
+
+function get_straight_cards(hand: Card[]): Card[] | false {
+	hand = sortCards(hand);
+	hand = removeDuplicateValues(hand);
+
+	if (hand.length < 5) return false;
+
+	let temp_cards: Card[] = [];
+
+	for (let card of hand) {
+		if (temp_cards.length == 0) temp_cards.push(card);
+
+		if (card.value == temp_cards[temp_cards.length - 1].value - 1) {
+			temp_cards.push(card);
+			if (temp_cards.length == 5) return temp_cards;
+		}
+		else {
+			temp_cards = [];
+			temp_cards.push(card);
+		}
+	}
+
+	return false;
+}
+
+function get_flush_cards(hand: Card[]): Card[] | false {	
+	for (let card of hand) {
+		let temp_cards: Card[] = [];
+		let suit: Suit = card.suit;
+
+		for (let other_card of hand) {
+			if (suit == other_card.suit) {
+				temp_cards.push(other_card);
+				if (temp_cards.length == 5) return temp_cards;
+			}
+		}
+	}
+
+	return false;
+}
+
+function get_full_house_cards(hand: Card[]): Card[] | false {
+	let three_of_kind: Card[] = [];
+	let pair: Card[] = [];
+
+	for (let card of hand) {
+		const temp_cards: Card[] = [];
+		for (let other_card of hand) {
+			if (other_card.value == card.value) temp_cards.push(other_card);
+		}
+
+		if (temp_cards.length == 3) three_of_kind = temp_cards;
+		else if (temp_cards.length == 2) pair = temp_cards;
+	}
+
+	if (three_of_kind.length == 3 && pair.length == 2) return three_of_kind.concat(pair);
+
+	return false;
+}
+
+function get_four_of_kind_cards(hand: Card[]): Card[] | false {
+	for (let card of hand) {
+		let temp_cards: Card[] = [];
+
+		for (let other_card of hand) {
+			if (card.value == other_card.value) temp_cards.push(other_card);
+			
+			if (temp_cards.length == 4) return temp_cards;
+		}
+	}
+
+	return false;
+}
+
+interface Cards_By_Suit {
+	hearts: Card[];
+	spades: Card[];
+	clubs: Card[];
+	diamonds: Card[];
+}
+
+function get_cards_by_suit(hand: Card[]): Cards_By_Suit {
+	const cards: Cards_By_Suit = {
+		hearts: [],
+		spades: [],
+		clubs: [],
+		diamonds: []
+	}
+
+	for (let card of hand) {
+		if (card.suit == Suit.HEARTS) cards.hearts.push(card);
+		if (card.suit == Suit.SPADES) cards.spades.push(card);
+		if (card.suit == Suit.CLUBS) cards.clubs.push(card);
+		if (card.suit == Suit.DIAMONDS) cards.diamonds.push(card);
+	}
+
+	return cards;
+}
+
+function get_straight_flush_cards(hand: Card[]): Card[] | false {
+	const cards: Cards_By_Suit = get_cards_by_suit(hand);
+
+	for (const [key, value] of Object.entries(cards)) {
+		if (value.length >= 5) return get_straight_cards(sortCards(value));
+	}
+
+	return false;
+}
+
 // keep this seperate from handRank func
-function find_five_used_cards() {
-	for (let player of game.players) {
-		switch(player.hand_rank) {
-			case Hand_Rank.HIGH_CARD: {
-				player.best_cards = player.final_hand_cards.slice(0, 5);
-				break;
+function find_five_used_cards(player: Player) {
+	let final_cards = player.final_hand_cards;
+	// console.log('hand lengths')
+	// console.log(final_cards.length, player.final_hand_cards.length);
+	// final_cards = final_cards.slice(0, 4);
+	// console.log(final_cards.length, player.final_hand_cards.length);
+
+
+	switch(player.hand_rank) {
+		case Hand_Rank.HIGH_CARD: {
+			player.best_cards = final_cards.slice(0, 5);
+			break;
+		}
+		case Hand_Rank.PAIR: {
+			const pairs = findPairs(final_cards);
+			const cards_with_value = get_cards_with_value(final_cards, pairs[0].value);
+			player.best_cards.push(...cards_with_value);
+
+			// get remaining 3 best cards in hand
+			const hightest_non_matching = get_highest_non_matching_cards(final_cards, [pairs[0].value]);
+			player.best_cards.push(...hightest_non_matching.slice(0, 3));
+
+			break;
+		}
+		case Hand_Rank.TWO_PAIR: {
+			const pairs = findPairs(final_cards);
+			const first_pair_cards: Card[] = get_cards_with_value(final_cards, pairs[0].value);
+			player.best_cards.push(...first_pair_cards);
+			const second_pair_cards: Card[] = get_cards_with_value(final_cards, pairs[1].value);
+			player.best_cards.push(...second_pair_cards);
+
+			// add last card
+			const hightest_non_matching = get_highest_non_matching_cards(final_cards, [pairs[0].value, pairs[1].value]);
+			player.best_cards.push(...hightest_non_matching.slice(0, 1));
+
+			break;
+		}
+		case Hand_Rank.THREE_OF_KIND: {
+			const three_of_kind_cards: Card[] | false = get_three_of_kind_cards(final_cards);
+			if (three_of_kind_cards) {
+				player.best_cards.push(...three_of_kind_cards);
+				const hightest_non_matching = get_highest_non_matching_cards(final_cards, [three_of_kind_cards[0].value]);
+				player.best_cards.push(...hightest_non_matching.slice(0, 2));
 			}
-			case Hand_Rank.PAIR: {
-				const pairs = findPairs(player.final_hand_cards);
-				for (let card of player.final_hand_cards) {
-					if (card.value == pairs[0].value) {
-						player.best_cards.push(card);
-					}
-				}
-				let index = 0;
-				while (player.best_cards.length < 5) {
-					if (player.final_hand_cards[index].value != pairs[0].value) {
-						player.best_cards.push(player.final_hand_cards[index]);
-					}
-					index++;
-				}
-				break;
+
+			break;
+		}
+		case Hand_Rank.STRAIGHT: {
+			const straight_cards: Card[] | false = get_straight_cards(final_cards);
+			if (straight_cards) {
+				player.best_cards.push(...straight_cards);
 			}
+
+			break;
+		}
+		case Hand_Rank.FLUSH: {
+			const flush_cards: Card[] | false = get_flush_cards(final_cards);
+			if (flush_cards) {
+				player.best_cards.push(...flush_cards);
+			}
+
+			break;
+		}
+		case Hand_Rank.FULL_HOUSE: {
+			const full_house_cards: Card[] | false = get_full_house_cards(final_cards);
+			if (full_house_cards) {
+				player.best_cards.push(...full_house_cards);
+			}
+
+			break;
+		}
+		case Hand_Rank.FOUR_OF_KIND: {
+			const four_of_kind_cards: Card[] | false = get_four_of_kind_cards(final_cards);
+			if (four_of_kind_cards) {
+				player.best_cards.push(...four_of_kind_cards);
+			}
+
+			break;
+		}
+		case Hand_Rank.STRAIGHT_FLUSH: {
+			const straight_flush_cards: Card[] | false = get_straight_flush_cards(final_cards);
+			if (straight_flush_cards) {
+				player.best_cards.push(...straight_flush_cards);
+			}
+
+			break;
 		}
 	}
 }
