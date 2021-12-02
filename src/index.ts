@@ -1320,6 +1320,11 @@ function get_straight_flush_cards(hand: Card[]): Card[] | false {
 	return false;
 }
 
+function get_royal_flush_cards(hand: Card[]): Card[] | false {
+
+	return false;
+}
+
 // keep this seperate from handRank func
 function find_five_used_cards(player: Player) {
 	let final_cards = player.final_hand_cards;
@@ -1404,6 +1409,14 @@ function find_five_used_cards(player: Player) {
 			const straight_flush_cards: Card[] | false = get_straight_flush_cards(final_cards);
 			if (straight_flush_cards) {
 				player.best_cards.push(...straight_flush_cards);
+			}
+
+			break;
+		}
+		case Hand_Rank.ROYAL_FLUSH: {
+			const royal_flush_cards: Card[] | false = get_royal_flush_cards(final_cards);
+			if (royal_flush_cards) {
+				player.best_cards.push(...royal_flush_cards);
 			}
 
 			break;
