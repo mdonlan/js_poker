@@ -2,7 +2,7 @@
 
 // test_func();
 
-import { App, create_ui } from "./UI"
+import { App, render_ui } from "./UI"
 import { Suit, Card, Player, Game, Player_Type, Ranked_Hand, Hand_Rank, game, Card_Type, Hand_Phase } from "./Game"
 import { SimulateHand } from "./Sim_Hand";
 
@@ -108,7 +108,7 @@ function init() {
 	game.players = createPlayers();
 	humanPlayer = game.players[0];
 	game.human = humanPlayer;
-	create_ui();
+	render_ui();
 	newHand();
 };
 
@@ -139,68 +139,27 @@ function resetAllHandData() {
 };
 
 function dealHand() {
-
 	// deal a new hand
+
+	// DEV -- deal a specific hand for a player
+	// if (player.type == Player_Type.HUMAN) {
+	// 	player.hand.push(...dev_deal_cards(game.deck, [
+	// 		{suit: Suit.HEARTS, type: Card_Type.TWO},
+	// 		{suit: Suit.HEARTS, type: Card_Type.THREE},
+	// 		{suit: Suit.HEARTS, type: Card_Type.FOUR},
+	// 		{suit: Suit.HEARTS, type: Card_Type.FIVE},
+	// 		{suit: Suit.HEARTS, type: Card_Type.SIX}
+	// 	]));
 
 	game.players.forEach((player) => {
 		player.hand = <Card[]>[];
 		player.final_hand_cards = <Card[]>[];
-		if (player.type == Player_Type.HUMAN) {
-			player.hand.push(...dev_deal_cards(game.deck, [
-				{suit: Suit.HEARTS, type: Card_Type.TWO},
-				{suit: Suit.HEARTS, type: Card_Type.THREE},
-				{suit: Suit.HEARTS, type: Card_Type.FOUR},
-				{suit: Suit.HEARTS, type: Card_Type.FIVE},
-				{suit: Suit.HEARTS, type: Card_Type.SIX}
-			]));
-		} else {
-			dealCards(player, 2);
-		}
+		dealCards(player, 2);
 	});
 
 	updatePlayerCardElems();
 	startBettingRound();
 };
-
-
-
-// export function set_default_hand_status(): Hand_Status {
-// 	let hand_status: Hand_Status = {
-// 		on_phase: Hand_Phase.PREFLOP,
-// 		deal: {
-// 			started: false,
-// 			in_progress: false,
-// 			betting_complete: false
-// 		},
-// 		preflop: {
-// 			started: false,
-// 			in_progress: false,
-// 			betting_complete: false,
-// 		},
-// 		flop: {
-// 			started: false,
-// 			in_progress: false,
-// 			betting_complete: false,
-// 		},
-// 		turn: {
-// 			started: false,
-// 			in_progress: false,
-// 			betting_complete: false,
-// 		},
-// 		river: {
-// 			started: false,
-// 			in_progress: false,
-// 			betting_complete: false,
-// 		},
-// 		showdown: {
-// 			started: false,
-// 			in_progress: false,
-// 			betting_complete: false,
-// 		}
-
-// 	}
-// 	return hand_status;
-// };
 
 export function deal_card(deck: Card[]): Card {
 	let cardPosInDeck = Math.floor(Math.random() * game.deck.length);
@@ -577,14 +536,18 @@ function endOfRound() {
 			// console.log('showdown phase has ended and the hand has ended');
 
 			// end of the hand
-			showPrivateCards = true;
-			updatePlayerCardElems(); // update to show ai cards
-			findHandWinner(); // find the winner of the current hand
-			toggleDealNewHandButton(); // show the deal new hand btn, allow the player to start the next round
+			end_of_hand();
 
 			break;
 	}
 };
+
+function end_of_hand() {
+	showPrivateCards = true;
+	updatePlayerCardElems(); // update to show ai cards
+	findHandWinner(); // find the winner of the current hand
+	toggleDealNewHandButton(); // show the deal new hand btn, allow the player to start the next round
+}
 
 function compareRankedHands(highestRankedHand: Ranked_Hand, rankedHand: Ranked_Hand): boolean {
 
@@ -641,6 +604,11 @@ function findHandWinner() {
 
 		displayFinalHand(player);
 	});
+
+	game.hand_winner = highestRankedHand.player;
+
+	render_ui();
+	// set();
 
 	let winnerElem: Element | null = document.querySelector(".winner");
 	if (winnerElem) {

@@ -102,6 +102,7 @@ export interface Game {
 	// round_start_player_index: number;
 	active_player: Player | null;
 	round_order: Player[];
+	hand_winner: Player | null;
 }
 
 export const game: Game = {
@@ -112,5 +113,6 @@ export const game: Game = {
 	round_current_player_index: 0,
 	// round_start_player_index: 0,
 	round_order: [],
-	active_player: null
+	active_player: null,
+	hand_winner: null,
 };

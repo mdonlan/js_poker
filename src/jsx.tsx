@@ -9,7 +9,7 @@ export const elem = (tag, props, ...children) => {
 	});
 
 	children.forEach(child => {
-		appendChild(element, child);
+		if (child) appendChild(element, child); // check for if child, because sometimes we want to return null in jsx
 	});
 
 	return element;

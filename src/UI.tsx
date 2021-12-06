@@ -18,41 +18,44 @@ function Bet_Area() {
     )
 }
 
-export function App(props) {
+function End_Of_Hand() {
 	return (
-		<div>
+		<div class="end_of_hand">
+			<div>end of hand</div>
+			{/* {["foo", "bar"].map(function (i) {
+				return <span>{i}</span>;
+			})} */}
+			{game.hand_winner != null ? <div>{game.hand_winner.name}</div>: null}
+		</div>
+	)
+}
+
+export function App(props) {
+	console.log("APP");
+	console.log(game.hand_winner)
+	return (
+		<div class="ui">
+			{game.hand_winner != null ? <End_Of_Hand /> : null}
             <Bet_Area />
         </div>
 	)
 }
 
-export function create_ui() {
+export function set(state_var, new_value) {
+	state_var = new_value;
+	render_ui();	
+}
 
-	// const bet_options_elem = document.querySelector(".bet_options");
-	
-	// const check_button = document.createElement("div");
-	// // check_button.onclick = humanCheck;
-	// check_button.innerHTML = "CHECK";
-	// check_button.className = "check bet_button";
-	// bet_options_elem.appendChild(check_button);
-
-	// const bet_button = document.createElement("div");
-	// // bet_button.onclick = humanBet;
-	// bet_button.innerHTML = "BET";
-	// bet_button.className = "bet bet_button";
-	// bet_options_elem.appendChild(bet_button);
-
-	// const fold_button = document.createElement("div");
-	// // fold_button.onclick = humanFold;
-	// fold_button.innerHTML = "FOLD";
-	// fold_button.className = "fold bet_button";
-	// bet_options_elem.appendChild(fold_button);
-
-	// const bet_amount_button = document.createElement("input");
-	// bet_amount_button.contentEditable = 'true';
-	// bet_amount_button.placeholder = "Bet Amount";
-	// bet_amount_button.className = "bet_amount";
-	// bet_options_elem.appendChild(bet_amount_button);
-	
-    document.getElementById("root").appendChild(<App name="foo" />);
+export function render_ui() {
+	const root_el = document.getElementById("root");
+	const old_app_el = root_el.childNodes[0];
+	const app_node = <App name="foo" />;
+	if (root_el.children.length == 0) {
+		console.log("mounting");
+		root_el.appendChild(app_node);
+	} else {
+		console.log("rendering");
+		root_el.innerHTML = "";
+		root_el.appendChild(app_node);
+	}
 }
