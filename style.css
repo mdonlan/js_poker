@@ -123,6 +123,8 @@ html, body {
   text-decoration: underline;
 }
 
+.player_money {}
+
 .player0 {
   position: absolute;
   top: calc(65%);
@@ -157,6 +159,10 @@ html, body {
   left: calc(65%);
 }
 
+.active_player {
+  color: red; 
+}
+
 /* human betting buttons */
 
 .bet_options {
@@ -180,11 +186,15 @@ html, body {
   display: none; */
 }
 
-.bet_options_show {
-  /* margin-top: -50px;
-  z-index: 0;
-  display: flex; */
+.bet_options_hide {
+  display: none;
 }
+
+/* .bet_options_show { */
+  /* margin-top: -50px; */
+  /* z-index: 0; */
+  /* display: flex; */
+/* } */
 
 .bet_button {
   background: #222222;
@@ -243,18 +253,26 @@ html, body {
   text-align: center;
 }
 
-/* end of hand */ 
+.pot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  background: red;
+  z-index: 2;
+}
 
 .end_of_hand {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   position: absolute;
   height: 100px;
   width: 300px;
   top: calc(50% + 25px);
   left: calc(50% - 150px);
   background: #111111;
+  z-index: 1;
   
   /* position: absolute;
   height: 100px;
@@ -271,8 +289,8 @@ html, body {
   display: none; */
 }
 
-.end_of_hand_show {
-  /* display: flex; */
+.end_of_hand_hide {
+  display: none;
 }
 
 .deal_new_hand_button {

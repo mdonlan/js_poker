@@ -93,6 +93,16 @@ export enum Hand_Phase {
 // 	showdown: Phase
 // }
 
+interface Blinds {
+	small: number;
+	big: number;
+}
+
+interface Current_Hand {
+	pot: number;
+	current_bet: number;
+}
+
 export interface Game {
 	deck: Card[];
 	players: Player[];
@@ -103,6 +113,9 @@ export interface Game {
 	active_player: Player | null;
 	round_order: Player[];
 	hand_winner: Player | null;
+	dealer: number;
+	blinds: Blinds;
+	current_hand: Current_Hand;
 }
 
 export const game: Game = {
@@ -115,4 +128,7 @@ export const game: Game = {
 	round_order: [],
 	active_player: null,
 	hand_winner: null,
+	dealer: 0,
+	blinds: {small: 5, big: 10},
+	current_hand: {pot: 0, current_bet: 0}
 };

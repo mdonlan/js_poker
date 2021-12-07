@@ -109,13 +109,13 @@ function init() {
 	humanPlayer = game.players[0];
 	game.human = humanPlayer;
 	// init_ui();
-	newHand();
+	deal_new_hand();
 };
 
 function addEventListeners() {
 	el(".check").addEventListener("click", () => {
 		console.log("check")
-		endTurn(game.human, false);
+		end_turn(game.human, false);
 	})
 
 	// content editable onChange listener for human player bet ammount
@@ -125,26 +125,40 @@ function addEventListeners() {
 	// }
 };
 
-function newHand() {
-	// start a new hand
+// export function dealNewHand() {
+// 	console.log('dealing new hand...');
+// 	game.hand_winner = null;
+// 	dealHand();
+// 	blinds();
+// 	game.players.forEach((player) => {
+// 		clearFinalHand(player);
+// 	});
+// 	toggle_end_of_hand_el();
+// };
 
-	resetAllHandData();
-	dealHand();
-};
 
-function resetAllHandData() {
-	// reset all the hand related data at the start of a new hand
+function deal_new_hand() {
 
-	// game.hand_status = set_default_hand_status();
+	game.hand_winner = null;
 	communityCards = [];
 	updateCommunityCardElems();
-	//onPhase = "preflop";
+
+	
+
+	createRoundOrder(0);
+	blinds();
+
+	game.round_order.forEach(player => {
+		player.hand = <Card[]>[];
+		player.final_hand_cards = <Card[]>[];
+		dealCards(player, 2);
+	});
+
+	update_player_ui();
+	startBettingRound();
 };
 
-function dealHand() {
-	// deal a new hand
-
-	// DEV -- deal a specific hand for a player
+// DEV -- deal a specific hand for a player
 	// if (player.type == Player_Type.HUMAN) {
 	// 	player.hand.push(...dev_deal_cards(game.deck, [
 	// 		{suit: Suit.HEARTS, type: Card_Type.TWO},
@@ -153,18 +167,6 @@ function dealHand() {
 	// 		{suit: Suit.HEARTS, type: Card_Type.FIVE},
 	// 		{suit: Suit.HEARTS, type: Card_Type.SIX}
 	// 	]));
-
-	game.players.forEach((player) => {
-		player.hand = <Card[]>[];
-		player.final_hand_cards = <Card[]>[];
-		dealCards(player, 2);
-	});
-
-	updatePlayerCardElems();
-	startBettingRound();
-
-	// render_ui();
-};
 
 export function deal_card(deck: Card[]): Card {
 	let cardPosInDeck = Math.floor(Math.random() * game.deck.length);
@@ -201,12 +203,13 @@ export function dealCards(player: Player, numCardsToDeal: number) {
 	}
 };
 
-function updatePlayerCardElems() {
-	// after dealing update the DOM elems to show the players cards
-
+function update_player_ui() {
 	for (let player of game.players) {
 		let player_el = el(`.${player.name}`);
 		let cards_el = child_el(player_el, ".cards");
+		let money_el = child_el(player_el, ".player_money");
+
+		money_el.innerHTML = player.money.toString();
 
 		for (let card of Array.from(cards_el.children)) {
 			if (showPrivateCards || player.id == 0) {
@@ -218,101 +221,17 @@ function updatePlayerCardElems() {
 			}
 		}
 	}
-
-	// game.players.forEach((player) => {
-	// 	let playerElem: Element | null = document.querySelector("." + player.name);
-	// 	let children: Element[] = [];
-	// 	if (playerElem) {
-	// 		children = Array.from(playerElem.children);
-	// 	}
-
-	// 	children.forEach((cardElem) => {
-	// 		// console.log(cardElem)
-	// 		if (cardElem.classList.contains("cards")) {
-	// 			let cards = Array.from(cardElem.children);
-	// 			// console.log(cards);
-	// 			cards.forEach((card) => {
-	// 				// console.log(card);
-
-	// 				// set card1
-	// 				if (card.classList.contains("card1")) {
-	// 					//cardElem.innerHTML = player.hand[0].cardValue + player.hand[0].suit;
-
-	// 					if (player.name == "player0") {
-	// 						card.innerHTML = getCardImage(player.hand[0].value, player.hand[0].suit, false);
-	// 					} else {
-	// 						// create the card image
-	// 						if (showPrivateCards) {
-	// 							card.innerHTML = getCardImage(player.hand[0].value, player.hand[0].suit, false);
-	// 						} else {
-	// 							getBackCard(card);
-	// 						}
-	// 					}
-	// 				}
-
-	// 				// set card2
-	// 				if (card.classList.contains("card2")) {
-	// 					//cardElem.innerHTML = player.hand[1].cardValue + player.hand[1].suit;
-
-	// 					if (player.name == "player0") {
-	// 						card.innerHTML = getCardImage(player.hand[1].value, player.hand[1].suit, false);
-	// 					} else {
-	// 						// create the card image
-	// 						if (showPrivateCards) {
-	// 							card.innerHTML = getCardImage(player.hand[1].value, player.hand[1].suit, false);
-	// 						} else {
-	// 							getBackCard(card);
-	// 						}
-	// 					}
-	// 				}
-	// 			});
-	// 		}
-	// 	});
-	// });
 };
 
 function card_back() {
 	return "<img class='card_image' src='./assets/deck/card_back.svg'>";
 };
 
-export function getCardImage(cardValue: number | string, suit: Suit, isFinalCards: boolean) {
+export function getCardImage(card_value: number | string, suit: Suit, is_final_cards: boolean) {
+	let value = card_value > 10 ? Card_Type[card_value] : card_value; 
+	let imageName = value + "_of_" + Suit[suit] + ".svg";
 
-	switch (cardValue) {
-		case 14:
-			cardValue = "Ace";
-			break;
-		case 13:
-			cardValue = "King";
-			break;
-		case 12:
-			cardValue = "Queen";
-			break;
-		case 11:
-			cardValue = "Jack";
-			break;
-		default:
-			break;
-	}
-
-	let suit_str: string;
-	switch (suit) {
-		case Suit.CLUBS:
-			suit_str = "Clubs";
-			break;
-		case Suit.HEARTS:
-			suit_str = "Hearts";
-			break;
-		case Suit.DIAMONDS:
-			suit_str = "Diamonds";
-			break;
-		case Suit.SPADES:
-			suit_str = "Spades";
-			break;
-	}
-
-	let imageName = cardValue + "_of_" + suit_str + ".svg";
-
-	if (isFinalCards) {
+	if (is_final_cards) {
 		let image = "<img class='final_card_image' src='./assets/deck/" + imageName + "'>";
 		return image;
 	} else {
@@ -323,7 +242,6 @@ export function getCardImage(cardValue: number | string, suit: Suit, isFinalCard
 };
 
 function updateCommunityCards() {
-	// console.log("update community cards -- phase=" + game.hand_phase);
 	switch (game.hand_phase) {
 		case Hand_Phase.PREFLOP:
 			break;
@@ -353,7 +271,7 @@ function dealCommunityCards(numToDeal: number) {
 };
 
 function startBettingRound() {
-	// console.log("starting hand phase: " + game.hand_phase);
+	console.log("starting hand phase: " + Hand_Phase[game.hand_phase]);
 	// console.log('starting the ' + handStatus.onPhase + " round");
 	// starts the round of betting with whichever player is supposed to open the betting
 
@@ -370,7 +288,7 @@ function startBettingRound() {
 
 
 	// currently this always starts at zero, FIX!!
-	createRoundOrder(0);
+	
 	// game.active_player = game.round_order[0];
 
 	//log(firstPlayerInRound.name);
@@ -379,13 +297,15 @@ function startBettingRound() {
 	// since this is the start of the round the active player is the firstPlayerInRound
 	// console.log("first_player_in_round: " + firstPlayerInRound.id);
 	// game.active_player = firstPlayerInRound;
-
+	createRoundOrder(0);
+	
 	
 
 	// check if we need to deal out any community cards to start the round
 	updateCommunityCards();
-
-	startNextPlayerTurn(game.active_player);
+	// console.log('active_player')
+	// console.log(game.active_player);
+	start_turn(game.active_player);
 
 };
 
@@ -430,16 +350,18 @@ function aiTurn(player: Player) {
 	//rankHand(player);
 
 	// attempt to simulate the hand
-	let simHand = new SimulateHand(player.hand, communityCards, player, game.players);
+	// let simHand = new SimulateHand(player.hand, communityCards, player, game.players);
 
 
-	endTurn(player, false);
+	setTimeout(() => {
+		end_turn(player, false);
+	}, 100);
 };
 
 function humanTurn(player: Player) {
 	// the human players betting action
 	// console.log('starting human turn for player ' + player.name);
-	toggleBetHumanOptions();
+	toggle_bet_options_el();
 	betOrCall();
 
 };
@@ -470,37 +392,36 @@ function setBetAmountToMin() {
 	}
 };
 
-export function endTurn(player: Player, newBetHasBeenPlaced: boolean) {
-	// do end of turn logic here
-	// console.log("ending turn for player: " + player.id)
+export function end_turn(player: Player, newBetHasBeenPlaced: boolean) {
 	if (player.type == Player_Type.HUMAN) {
-		toggleBetHumanOptions();
+		toggle_bet_options_el();
 	}
 
 	// if a new bet has been placed then reset the round order
 	if (newBetHasBeenPlaced) {
 		setNewRoundOrderAfterBet(player);
 	} else { // if no new bet then continue the round as normal
-		let roundComplete = checkIfRoundComplete(player);
-
-		if (roundComplete) {
+		if (check_if_round_complete(player)) {
 			endOfRound();
 		} else {
 			// if not the end of round then move on to the next player
 			const next_player = findNextPlayer();
-			// console.log("next_player: " + next_player.id)
-			startNextPlayerTurn(next_player);
+			console.log("next_player: ", next_player)
+			console.log(game.round_order)
+			start_turn(next_player);
 		}
 	}
+
+	const player_el: Element = el(`.${player.name}`);
+	player_el.classList.remove("active_player");
 
 	// render_ui();
 };
 
-function checkIfRoundComplete(player: Player): boolean {
-
-	// check if this was the last player in the round
-
-	if (player == game.round_order[game.round_order.length - 1]) {
+function check_if_round_complete(player: Player): boolean {
+	console.log("checking if round compelte")
+	console.log(player.id, game.round_order[game.round_order.length - 1].id);
+	if (player.id == game.round_order[game.round_order.length - 1].id) {
 		//log('last player in roundOrder has ended their turn')
 		return true;
 	}
@@ -517,8 +438,10 @@ function findNextPlayer(): Player {
 	return next_player;
 };
 
-function startNextPlayerTurn(player: Player) {
-	// console.log("starting next players turn for player: " + player.id);
+function start_turn(player: Player) {
+	const player_el: Element = el(`.${player.name}`);
+	player_el.classList.add("active_player");
+
 	if (player.type == Player_Type.AI) {
 		aiTurn(player);
 	} else {
@@ -527,6 +450,7 @@ function startNextPlayerTurn(player: Player) {
 };
 
 function endOfRound() {
+	console.log("end of round")
 	// the current betting round has ended, move on to the next betting round / determine winner
 	// console.log("end of round: " + game.hand_phase);
 	showPrivateCards = false; // make sure not to show the ai players cards, unless it is end of hand
@@ -565,9 +489,9 @@ function endOfRound() {
 
 function end_of_hand() {
 	showPrivateCards = true;
-	updatePlayerCardElems(); // update to show ai cards
+	update_player_ui(); // update to show ai cards
 	findHandWinner(); // find the winner of the current hand
-	toggleDealNewHandButton(); // show the deal new hand btn, allow the player to start the next round
+	toggle_end_of_hand_el(); // show the deal new hand btn, allow the player to start the next round
 	game.active_player = null; // to turn off betting options ui elem
 }
 
@@ -705,42 +629,54 @@ function displayFinalHand(player: Player) {
 	// }
 };
 
-function toggleDealNewHandButton() {
-	let betOptionsElem = document.querySelector(".deal_new_hand_button");
-	if (betOptionsElem) {
-		betOptionsElem.classList.toggle("deal_new_hand_button_hidden");
-	}
-	let endOfHandElem = document.querySelector(".end_of_hand");
-	if (endOfHandElem) {
-		endOfHandElem.classList.toggle("end_of_hand_show");
-	}
+function toggle_end_of_hand_el() {
+	el(".end_of_hand").classList.toggle("end_of_hand_hide");
 };
 
-export function dealNewHand() {
-	console.log('dealing new hand...');
-	game.hand_winner = null;
-	dealHand();
-	game.players.forEach((player) => {
-		clearFinalHand(player);
-	});
-	toggleDealNewHandButton();
-};
+function blinds() {
+	child_el(el(`.${game.round_order[0].name}`), ".player_name").innerHTML = game.round_order[0].name + " -- DEALER";
+	child_el(el(`.${game.round_order[1].name}`), ".player_name").innerHTML = game.round_order[1].name + " -- BB";
+	child_el(el(`.${game.round_order[2].name}`), ".player_name").innerHTML = game.round_order[2].name + " -- SB";
 
-function createRoundOrder(startingIndex: number): void {
-	// reorder the players array into the correct order for this betting round
-	let start = game.players.slice(startingIndex);
-	let end = game.players.slice(0, startingIndex);
+	add_money_to_pot(game.round_order[1], game.blinds.small);
+	add_money_to_pot(game.round_order[2], game.blinds.big);
+}
+
+
+// round_order[0] = dealer
+// round_order[1] = bb
+// round_order[2] = sm
+// round_order[3] = first to play
+
+// start w/ dealer_index
+// then add 3 to it to get first player in round to bet
+function createRoundOrder(dealer_index: number): void {
+	let first_player = dealer_index + 3;
+	if (first_player > game.players.length - 1) {
+		first_player -= game.players.length;
+	}
+	console.log(`first_player_id: ${first_player}`);
+
+	let start = game.players.slice(first_player);
+	let end = game.players.slice(0, first_player);
 	game.round_order = start.concat(end);
+
 	game.round_current_player_index = 0;
-	game.active_player = game.round_order[0]
+	game.active_player = game.players[first_player];
+
+	console.log(game.active_player)
 };
 
-function toggleBetHumanOptions() {
-	let betOptionsElem = document.querySelector(".bet_options");
-	if (betOptionsElem) {
-		betOptionsElem.classList.toggle("bet_options_show");
-	}
+function toggle_bet_options_el(): void {
+	el(".bet_options").classList.toggle("bet_options_hide");
 };
+
+function add_money_to_pot(player: Player, value: number) {
+	player.money -= value;
+	game.current_hand.pot += value;
+
+	el(".pot").innerHTML = `Pot: ${game.current_hand.pot}`; 
+}
 
 
 function humanBet() {
@@ -754,7 +690,7 @@ function humanBet() {
 	// only accept the click if the betAmount is > 0 >= roundbetAmount
 	if (betAmount > 0 && betAmount >= roundBetAmount) {
 		betPlaced(betAmount);
-		endTurn(humanPlayer, true);
+		end_turn(humanPlayer, true);
 	} else {
 		//log('player tried to bet zero, or less than the roundBetAmount')
 	}
@@ -765,7 +701,7 @@ function humanBet() {
 function humanFold() {
 	//log("human fold");
 
-	endTurn(humanPlayer, false);
+	end_turn(humanPlayer, false);
 };
 
 function betInputHandler(e: KeyboardEvent) {
@@ -871,7 +807,7 @@ function setNewRoundOrderAfterBet(player: Player) {
 	// since the current player has already bet we need to remove them from the end of the round
 	game.round_order = game.round_order.slice(0, game.round_order.length - 1);
 
-	startNextPlayerTurn(game.active_player);
+	start_turn(game.active_player);
 };
 
 function getPlayerRoundIndex(player: Player): number {

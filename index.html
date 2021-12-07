@@ -3,18 +3,21 @@
 		<title>poker</title>
 		<script src="./dist/bundle.js" defer></script>
 		<link rel="stylesheet" type="text/css" href="style.css">
-		<!-- <link rel="icon" type="image/x-icon" href="./assets/favicon-32x32.png"> -->
+		<link rel="apple-touch-icon" sizes="180x180" href="./assets/favicon/apple-touch-icon.png">
+		<link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon/favicon-16x16.png">
+		<link rel="manifest" href="./assets/favicon/site.webmanifest">
+		<link rel="mask-icon" href="./assets/favicon/safari-pinned-tab.svg" color="#5bbad5">
+		<meta name="msapplication-TileColor" content="#da532c">
+		<meta name="theme-color" content="#ffffff">
 	</head>
 <body>
 	<div class="wrapper">
 		<div class="game">
-			<!-- <div class="end_of_hand">
-          <div class="winner"></div>
-          <div class="deal_new_hand_button deal_new_hand_button_hidden" onclick="dealNewHand()">DEAL NEXT HAND</div>
-        </div> -->
 			<div class="player_container">
 				<div class="player0 player">
 					<div class="player_name">Player0</div>
+					<div class="player_money"></div>
 					<div class="cards">
 						<div class="card1 card"></div>
 						<div class="card2 card"></div>
@@ -28,6 +31,7 @@
 				</div>
 				<div class="player1 player">
 					<div class="player_name">Player1</div>
+					<div class="player_money"></div>
 					<div class="cards">
 						<div class="card1 card"></div>
 						<div class="card2 card"></div>
@@ -41,6 +45,7 @@
 				</div>
 				<div class="player2 player">
 					<div class="player_name">Player2</div>
+					<div class="player_money"></div>
 					<div class="cards">
 						<div class="card1 card"></div>
 						<div class="card2 card"></div>
@@ -54,6 +59,7 @@
 				</div>
 				<div class="player3 player">
 					<div class="player_name">Player3</div>
+					<div class="player_money"></div>
 					<div class="cards">
 						<div class="card1 card"></div>
 						<div class="card2 card"></div>
@@ -67,6 +73,7 @@
 				</div>
 				<div class="player4 player">
 					<div class="player_name">Player4</div>
+					<div class="player_money"></div>
 					<div class="cards">
 						<div class="card1 card"></div>
 						<div class="card2 card"></div>
@@ -80,6 +87,7 @@
 				</div>
 				<div class="player5 player">
 					<div class="player_name">Player5</div>
+					<div class="player_money"></div>
 					<div class="cards">
 						<div class="card1 card"></div>
 						<div class="card2 card"></div>
@@ -93,12 +101,19 @@
 				</div>
 			</div>
 
-			<div class="bet_options">
+			<div class="pot"></div>
+
+			<div class="bet_options bet_options_hide">
           <div class="check bet_button">Check</div>
           <div class="bet bet_button" onclick="humanBet()">Bet</div>
           <div class="fold bet_button" onclick="humanFold()">Fold</div>
 
           <div class="bet_amount" contenteditable="true" placeholder="Bet Amount"></div>
+        </div>
+
+		<div class="end_of_hand end_of_hand_hide">
+          <div class="winner"></div>
+          <div class="deal_new_hand_button" onclick="dealNewHand()">DEAL NEXT HAND</div>
         </div>
 
 			<div class="community_cards">
