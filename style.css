@@ -161,7 +161,7 @@ html, body {
 
 .bet_options {
   position: absolute;
-  top: calc(100% - 75px);
+  top: calc(100% - 40px);
   left: calc(50% - 150px);
   display: flex;
   justify-content: center;

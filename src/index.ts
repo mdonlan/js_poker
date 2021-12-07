@@ -2,7 +2,7 @@
 
 // test_func();
 
-import { App, init_ui, render_ui } from "./UI"
+// import { App, init_ui, render_ui } from "./UI"
 import { Suit, Card, Player, Game, Player_Type, Ranked_Hand, Hand_Rank, game, Card_Type, Hand_Phase } from "./Game"
 import { SimulateHand } from "./Sim_Hand";
 
@@ -102,25 +102,28 @@ function createPlayers(): Player[] {
 
 function init() {
 	// console.log("init");
-	// addEventListeners();
+	addEventListeners();
 	// deck = create_deck();
 	game.deck = create_deck();
 	game.players = createPlayers();
 	humanPlayer = game.players[0];
 	game.human = humanPlayer;
-	init_ui();
+	// init_ui();
 	newHand();
 };
 
-// function addEventListeners() {
-// 	// add any nessesary event listeners
+function addEventListeners() {
+	el(".check").addEventListener("click", () => {
+		console.log("check")
+		endTurn(game.human, false);
+	})
 
-// 	// content editable onChange listener for human player bet ammount
-// 	let elem: Element | null = document.querySelector('.bet_amount');
-// 	if (elem) {
-// 		elem.addEventListener('keypress', betInputHandler);
-// 	}
-// };
+	// content editable onChange listener for human player bet ammount
+	// let elem: Element | null = document.querySelector('.bet_amount');
+	// if (elem) {
+	// 	elem.addEventListener('keypress', betInputHandler);
+	// }
+};
 
 function newHand() {
 	// start a new hand
@@ -160,7 +163,7 @@ function dealHand() {
 	updatePlayerCardElems();
 	startBettingRound();
 
-	render_ui();
+	// render_ui();
 };
 
 export function deal_card(deck: Card[]): Card {
@@ -201,61 +204,75 @@ export function dealCards(player: Player, numCardsToDeal: number) {
 function updatePlayerCardElems() {
 	// after dealing update the DOM elems to show the players cards
 
-	game.players.forEach((player) => {
-		let playerElem: Element | null = document.querySelector("." + player.name);
-		let children: Element[] = [];
-		if (playerElem) {
-			children = Array.from(playerElem.children);
-		}
+	for (let player of game.players) {
+		let player_el = el(`.${player.name}`);
+		let cards_el = child_el(player_el, ".cards");
 
-		children.forEach((cardElem) => {
-			console.log(cardElem)
-			if (cardElem.classList.contains("cards")) {
-				let cards = Array.from(cardElem.children);
-				console.log(cards);
-				cards.forEach((card) => {
-					console.log(card);
-
-					// set card1
-					if (card.classList.contains("card1")) {
-						//cardElem.innerHTML = player.hand[0].cardValue + player.hand[0].suit;
-
-						if (player.name == "player0") {
-							card.innerHTML = getCardImage(player.hand[0].value, player.hand[0].suit, false);
-						} else {
-							// create the card image
-							if (showPrivateCards) {
-								card.innerHTML = getCardImage(player.hand[0].value, player.hand[0].suit, false);
-							} else {
-								getBackCard(card);
-							}
-						}
-					}
-
-					// set card2
-					if (card.classList.contains("card2")) {
-						//cardElem.innerHTML = player.hand[1].cardValue + player.hand[1].suit;
-
-						if (player.name == "player0") {
-							card.innerHTML = getCardImage(player.hand[1].value, player.hand[1].suit, false);
-						} else {
-							// create the card image
-							if (showPrivateCards) {
-								card.innerHTML = getCardImage(player.hand[1].value, player.hand[1].suit, false);
-							} else {
-								getBackCard(card);
-							}
-						}
-					}
-				});
+		for (let card of Array.from(cards_el.children)) {
+			if (showPrivateCards || player.id == 0) {
+				if (card.classList.contains("card1")) card.innerHTML = getCardImage(player.hand[0].value, player.hand[0].suit, false);
+				else if (card.classList.contains("card2")) card.innerHTML = getCardImage(player.hand[1].value, player.hand[1].suit, false);
+			} else {
+				if (card.classList.contains("card1")) card.innerHTML = card_back();
+				else if (card.classList.contains("card2")) card.innerHTML = card_back();
 			}
-		});
-	});
+		}
+	}
+
+	// game.players.forEach((player) => {
+	// 	let playerElem: Element | null = document.querySelector("." + player.name);
+	// 	let children: Element[] = [];
+	// 	if (playerElem) {
+	// 		children = Array.from(playerElem.children);
+	// 	}
+
+	// 	children.forEach((cardElem) => {
+	// 		// console.log(cardElem)
+	// 		if (cardElem.classList.contains("cards")) {
+	// 			let cards = Array.from(cardElem.children);
+	// 			// console.log(cards);
+	// 			cards.forEach((card) => {
+	// 				// console.log(card);
+
+	// 				// set card1
+	// 				if (card.classList.contains("card1")) {
+	// 					//cardElem.innerHTML = player.hand[0].cardValue + player.hand[0].suit;
+
+	// 					if (player.name == "player0") {
+	// 						card.innerHTML = getCardImage(player.hand[0].value, player.hand[0].suit, false);
+	// 					} else {
+	// 						// create the card image
+	// 						if (showPrivateCards) {
+	// 							card.innerHTML = getCardImage(player.hand[0].value, player.hand[0].suit, false);
+	// 						} else {
+	// 							getBackCard(card);
+	// 						}
+	// 					}
+	// 				}
+
+	// 				// set card2
+	// 				if (card.classList.contains("card2")) {
+	// 					//cardElem.innerHTML = player.hand[1].cardValue + player.hand[1].suit;
+
+	// 					if (player.name == "player0") {
+	// 						card.innerHTML = getCardImage(player.hand[1].value, player.hand[1].suit, false);
+	// 					} else {
+	// 						// create the card image
+	// 						if (showPrivateCards) {
+	// 							card.innerHTML = getCardImage(player.hand[1].value, player.hand[1].suit, false);
+	// 						} else {
+	// 							getBackCard(card);
+	// 						}
+	// 					}
+	// 				}
+	// 			});
+	// 		}
+	// 	});
+	// });
 };
 
-function getBackCard(card: Element) {
-	let image = "<img class='card_image' src='./assets/deck/card_back.svg'>";
-	card.innerHTML = image;
+function card_back() {
+	return "<img class='card_image' src='./assets/deck/card_back.svg'>";
 };
 
 export function getCardImage(cardValue: number | string, suit: Suit, isFinalCards: boolean) {
@@ -476,7 +493,7 @@ export function endTurn(player: Player, newBetHasBeenPlaced: boolean) {
 		}
 	}
 
-	render_ui();
+	// render_ui();
 };
 
 function checkIfRoundComplete(player: Player): boolean {
@@ -612,7 +629,7 @@ function findHandWinner() {
 
 	game.hand_winner = highestRankedHand.player;
 
-	render_ui();
+	// render_ui();
 	// set();
 
 	let winnerElem: Element | null = document.querySelector(".winner");
