@@ -1,5 +1,11 @@
 export const elem = (tag, props, ...children) => {
+	// console.log(`tag: ${tag}`)
+	// console.log(`tag_type: ${typeof tag}`)
+
+
 	if (typeof tag === "function") return tag(props, ...children);
+	
+	
 	const element = document.createElement(tag);
 
 	Object.entries(props || {}).forEach(([name, value]) => {

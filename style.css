@@ -137,7 +137,7 @@ html, body {
 
 .player0 {
   position: absolute;
-  top: calc(70%);
+  top: calc(65%);
 }
 
 .player1 {
@@ -234,7 +234,7 @@ html, body {
   width: 35%;
   background: rgb(8, 51, 31);
   position: absolute;
-  top: calc(50% - 10%);
+  top: calc(50% - 125px);
   left: calc(50% - 17.5%);
   display: flex;
   justify-content: space-around;
@@ -267,10 +267,6 @@ html, body {
 
 .end_of_hand_show {
   /* display: flex; */
-}
-
-.winner {
-  
 }
 
 .deal_new_hand_button {

@@ -2,7 +2,7 @@
 
 // test_func();
 
-import { App, render_ui } from "./UI"
+import { App, init_ui, render_ui } from "./UI"
 import { Suit, Card, Player, Game, Player_Type, Ranked_Hand, Hand_Rank, game, Card_Type, Hand_Phase } from "./Game"
 import { SimulateHand } from "./Sim_Hand";
 
@@ -108,7 +108,7 @@ function init() {
 	game.players = createPlayers();
 	humanPlayer = game.players[0];
 	game.human = humanPlayer;
-	render_ui();
+	init_ui();
 	newHand();
 };
 
@@ -1402,6 +1402,8 @@ function areWeTestingWithJest() {
 if (typeof jest !== 'undefined') {
 	console.log("jest")
 } else {
-	console.log("not jest")
-	init(); // start
+	window.addEventListener("load", function () {
+		console.log("not jest")
+		init(); // start
+	});
 }
