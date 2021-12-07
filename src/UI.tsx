@@ -1,6 +1,6 @@
 import { elem } from "./jsx"
-import { endTurn } from "./index"
-import { game } from "./Game";
+import { endTurn, dealNewHand, getCardImage } from "./index"
+import { Card_Type, game, Hand_Rank, Player_Type, Suit } from "./Game";
 
 interface UI_State {
 	test: string;
@@ -16,26 +16,94 @@ function check_handler() {
 	endTurn(game.human, false);
 };
 
-function Bet_Area() {
+function Bet_Options() {
     return (
-        <div class={bet_area}>
-            <div class={bet_button} onclick={() => check_handler()}>check</div>
-            <div class={bet_button}>bet</div>
-            <div class={bet_button}>fold</div>
+        <div class="bet_options">
+            <div class="bet_button" onclick={() => check_handler()}>check</div>
+            <div class="bet_button">bet</div>
+            <div class="bet_button">fold</div>
         </div>
     )
 }
 
 function End_Of_Hand() {
 	return (
-		<div>
-			<div>end of hand</div>
+		<div class="end_of_hand">
+			{/* <div>end of hand</div>
 			{/* {["foo", "bar"].map(function (i) {
 				return <span>{i}</span>;
 			})} */}
-			{game.hand_winner != null ? <div>{game.hand_winner.name}</div>: null}
+			{game.hand_winner != null ? <div>Player {game.hand_winner.name} won the hand with a {Hand_Rank[game.hand_winner.hand_rank]}</div>: null}
+			<div onclick={() => dealNewHand()}>Deal Next Hand</div>
 		</div>
 	)
+}
+
+function Players() {
+	return (
+		<div class="player_container">
+			{game.players.map(player => {
+				console.log(player)
+				return (
+					<div class={`player player${player.id}`}>
+						<div class="player_name">{player.name}</div>
+
+						<div class="cards">
+							{player.hand.map((card, i) => {
+								return (
+									<div class={`card${i} card`}>
+										<img class="card_image" src={`./assets/deck/${card.value > 10 ? Card_Type[card.value] : card.value}_of_${Suit[card.suit]}.svg`}></img>
+									</div>
+								)
+							})}
+						</div>
+
+						{/* {(() => {
+
+							if (player.hand.length >= 2) {
+								return (
+									<div class="cards">									
+										<div class="card1">
+											<img class="card_image" src={`./assets/deck/${player.hand[0].value > 9 ? Card_Type[player.hand[0].value] : player.hand[0].value}_of_${Suit[player.hand[0].suit]}.svg`}></img>
+										</div>
+										<div class="card2">
+											<img class="card_image" src={`./assets/deck/${Card_Type[player.hand[1].value]}_of_${Suit[player.hand[1].suit]}.svg`}></img>	
+										</div>								
+									</div>
+								)
+							} else {
+								<div class="cards">
+									<div class="card1"></div>
+									<div class="card2"></div>
+								</div>
+							}
+						})()} */}
+
+						
+						{/* <div class="final_hand">
+							<div class="hand_rank"></div>
+							<div class="final_hand_cards"></div>
+							<div class="best_cards"></div>
+						</div> */}
+					</div>
+				)
+			})}
+		</div>
+	)
+	// <div class="player_container">
+	// <div class="player0 player">
+	// 	<div class="player_name">Player0</div>
+	// 	<div class="cards">
+	// 		<div class="card1 card"></div>
+	// 		<div class="card2 card"></div>
+	// 	</div>
+
+	// 	<div class="final_hand">
+	// 		<div class="hand_rank"></div>
+	// 		<div class="final_hand_cards"></div>
+	// 		<div class="best_cards"></div>
+	// 	</div>
+	// </div>
 }
 
 // function renderElement(){
@@ -46,12 +114,13 @@ function End_Of_Hand() {
 
 export function App(props) {
 	console.log("APP");
-	console.log(game.hand_winner)
+	console.log(game)
 	return (
 		<div class={UI}>
+			<Players />
 			{game.hand_winner != null ? <End_Of_Hand /> : null}
             {(() => {
-				if (game) { return <Bet_Area /> } else { return null;}
+				if (game.active_player && game.active_player.type == Player_Type.HUMAN) { return <Bet_Options /> } else { return null;}
 			})()}
 			{}
         </div>
@@ -135,51 +204,48 @@ const bet_button = Style("bet_button", `
 let style_sheet: CSSStyleSheet;
 
 export function init_ui() {
-	let style_sheet_el: HTMLStyleElement = document.createElement("style")
-	style_sheet_el.type = "text/css"
-	style_sheet_el.innerText = '';
-	style_sheet_el.title = "test";
-	document.head.appendChild(style_sheet_el);
+	// let style_sheet_el: HTMLStyleElement = document.createElement("style")
+	// style_sheet_el.type = "text/css"
+	// style_sheet_el.innerText = '';
+	// style_sheet_el.title = "test";
+	// document.head.appendChild(style_sheet_el);
 
-	style_sheet = style_sheet_el.sheet;
+	// style_sheet = style_sheet_el.sheet;
 
-	for (let style of styles) {
-		// console.log(style.name, style.rules[0].toString())
-		style_sheet.insertRule(`.${style.name} {${style.rules.toString()}}`)
-		// style_sheet.insertRule(".test { color: red; }", 0)
-	}
+	// for (let style of styles) {
+	// 	// console.log(style.name, style.rules[0].toString())
+	// 	style_sheet.insertRule(`.${style.name} {${style.rules.toString()}}`)
+	// 	// style_sheet.insertRule(".test { color: red; }", 0)
+	// }
 
-	console.log(style_sheet)
+	// console.log(style_sheet)
 
 	
 
-	ui_state = new Proxy(ui_state, {
-		set: function(target, property, value) {
-			// do something
-			console.log("value changed from" + target[property] + " to " + value);
-			target[property] = value;
+	// ui_state = new Proxy(ui_state, {
+	// 	set: function(target, property, value) {
+	// 		// do something
+	// 		console.log("value changed from" + target[property] + " to " + value);
+	// 		target[property] = value;
 			
-			return true; // ts reasons?
-		}
-	});
+	// 		return true; // ts reasons?
+	// 	}
+	// });
 
-	ui_state.test = "hello"
-	ui_state.test = "world";
+	// ui_state.test = "hello"
+	// ui_state.test = "world";
 
 	render_ui();
 }
 
 export function render_ui() {
-
-	
-	// style.innerHTML = "div {border: 2px solid black; background-color: blue;}";
-	// let test: StyleSheet = style_sheet as StyleSheet;
-
 	const start_time = performance.now();
 
 	const root_el = document.getElementById("root");
 	const old_app_el = root_el.childNodes[0];
+
 	const app_node = <App name="foo" />;
+
 	if (root_el.children.length == 0) {
 		console.log("mounting");
 		root_el.appendChild(app_node);
@@ -191,7 +257,5 @@ export function render_ui() {
 
 	const end_time = performance.now();
 
-	console.log("render_time: " + (end_time - start_time))
-
-	// document.body.appendChild(style_sheet);
+	console.log("render_time: " + (end_time - start_time));
 }

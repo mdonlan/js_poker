@@ -1,105 +1,100 @@
 <html>
-  <head>
-    <title>poker</title>
-
-    <script src="./dist/bundle.js" defer></script>
-    <link rel="stylesheet" type="text/css" href="style.css">
-  </head>
-  <body>
-
-    <div class="wrapper">
-      
-      <div id="root"></div>
-      <div class="game hex_container">
-       
-
-        <!-- <div class="end_of_hand">
+	<head>
+		<title>poker</title>
+		<script src="./dist/bundle.js" defer></script>
+		<link rel="stylesheet" type="text/css" href="style.css">
+		<!-- <link rel="icon" type="image/x-icon" href="./assets/favicon-32x32.png"> -->
+	</head>
+<body>
+	<div class="wrapper">
+		<div id="root"></div>
+		<div class="game">
+			<!-- <div class="end_of_hand">
           <div class="winner"></div>
           <div class="deal_new_hand_button deal_new_hand_button_hidden" onclick="dealNewHand()">DEAL NEXT HAND</div>
         </div> -->
+			<!-- <div class="player_container">
+				<div class="player0 player">
+					<div class="player_name">Player0</div>
+					<div class="cards">
+						<div class="card1 card"></div>
+						<div class="card2 card"></div>
+					</div>
 
-        <div class="player_container">
-          <div class="player0 player">
-            <div class="player_name">Player0</div>
-            <div class="cards">
-              <div class="card1 card"></div>
-              <div class="card2 card"></div>
-            </div>
+					<div class="final_hand">
+						<div class="hand_rank"></div>
+						<div class="final_hand_cards"></div>
+						<div class="best_cards"></div>
+					</div>
+				</div>
+				<div class="player1 player">
+					<div class="player_name">Player1</div>
+					<div class="cards">
+						<div class="card1 card"></div>
+						<div class="card2 card"></div>
+					</div>
 
-            <div class="final_hand">
-              <div class="hand_rank"></div>
-              <div class="final_hand_cards"></div>
-              <div class="best_cards"></div>
-            </div>
-          </div>
-          <div class="player1 player">
-            <div class="player_name">Player1</div>
-            <div class="cards">
-              <div class="card1 card"></div>
-              <div class="card2 card"></div>
-            </div>
+					<div class="final_hand">
+						<div class="hand_rank"></div>
+						<div class="final_hand_cards"></div>
+						<div class="best_cards"></div>
+					</div>
+				</div>
+				<div class="player2 player">
+					<div class="player_name">Player2</div>
+					<div class="cards">
+						<div class="card1 card"></div>
+						<div class="card2 card"></div>
+					</div>
 
-            <div class="final_hand">
-              <div class="hand_rank"></div>
-              <div class="final_hand_cards"></div>
-              <div class="best_cards"></div>
-            </div>
-          </div>
-          <div class="player2 player">
-            <div class="player_name">Player2</div>
-            <div class="cards">
-              <div class="card1 card"></div>
-              <div class="card2 card"></div>
-            </div>
+					<div class="final_hand">
+						<div class="hand_rank"></div>
+						<div class="final_hand_cards"></div>
+						<div class="best_cards"></div>
+					</div>
+				</div>
+				<div class="player3 player">
+					<div class="player_name">Player3</div>
+					<div class="cards">
+						<div class="card1 card"></div>
+						<div class="card2 card"></div>
+					</div>
 
-            <div class="final_hand">
-              <div class="hand_rank"></div>
-              <div class="final_hand_cards"></div>
-              <div class="best_cards"></div>
-            </div>
-          </div>
-          <div class="player3 player">
-            <div class="player_name">Player3</div>
-            <div class="cards">
-              <div class="card1 card"></div>
-              <div class="card2 card"></div>
-            </div>
+					<div class="final_hand">
+						<div class="hand_rank"></div>
+						<div class="final_hand_cards"></div>
+						<div class="best_cards"></div>
+					</div>
+				</div>
+				<div class="player4 player">
+					<div class="player_name">Player4</div>
+					<div class="cards">
+						<div class="card1 card"></div>
+						<div class="card2 card"></div>
+					</div>
 
-            <div class="final_hand">
-              <div class="hand_rank"></div>
-              <div class="final_hand_cards"></div>
-              <div class="best_cards"></div>
-            </div>
-          </div>
-          <div class="player4 player">
-            <div class="player_name">Player4</div>
-            <div class="cards">
-              <div class="card1 card"></div>
-              <div class="card2 card"></div>
-            </div>
+					<div class="final_hand">
+						<div class="hand_rank"></div>
+						<div class="final_hand_cards"></div>
+						<div class="best_cards"></div>
+					</div>
+				</div>
+				<div class="player5 player">
+					<div class="player_name">Player5</div>
+					<div class="cards">
+						<div class="card1 card"></div>
+						<div class="card2 card"></div>
+					</div>
 
-            <div class="final_hand">
-              <div class="hand_rank"></div>
-              <div class="final_hand_cards"></div>
-              <div class="best_cards"></div>
-            </div>
-          </div>
-          <div class="player5 player">
-            <div class="player_name">Player5</div>
-            <div class="cards">
-              <div class="card1 card"></div>
-              <div class="card2 card"></div>
-            </div>
+					<div class="final_hand">
+						<div class="hand_rank"></div>
+						<div class="final_hand_cards"></div>
+						<div class="best_cards"></div>
+					</div>
+				</div>
+			</div> -->
 
-            <div class="final_hand">
-              <div class="hand_rank"></div>
-              <div class="final_hand_cards"></div>
-              <div class="best_cards"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- <div class="bet_options">
+			<!-- <div class="bet_options">
           <div class="check bet_button" onclick="humanCheck">Check</div>
           <div class="bet bet_button" onclick="humanBet()">Bet</div>
           <div class="fold bet_button" onclick="humanFold()">Fold</div>
@@ -107,18 +102,15 @@
           <div class="bet_amount" contenteditable="true" placeholder="Bet Amount"></div>
         </div> -->
 
-        <div class="community_cards">
-          <div class="community_card_1 community_card"></div>
-          <div class="community_card_2 community_card"></div>
-          <div class="community_card_3 community_card"></div>
-          <div class="community_card_4 community_card"></div>
-          <div class="community_card_5 community_card"></div>
-        </div>
-
-        
-
-      </div>
-
-    </div>
-  </body>
+			<div class="community_cards">
+				<div class="community_card_1 community_card"></div>
+				<div class="community_card_2 community_card"></div>
+				<div class="community_card_3 community_card"></div>
+				<div class="community_card_4 community_card"></div>
+				<div class="community_card_5 community_card"></div>
+			</div>
+			
+		</div>
+	</div>
+</body>
 </html>

@@ -159,6 +159,8 @@ function dealHand() {
 
 	updatePlayerCardElems();
 	startBettingRound();
+
+	render_ui();
 };
 
 export function deal_card(deck: Card[]): Card {
@@ -207,12 +209,12 @@ function updatePlayerCardElems() {
 		}
 
 		children.forEach((cardElem) => {
-			//log(cardElem)
+			console.log(cardElem)
 			if (cardElem.classList.contains("cards")) {
 				let cards = Array.from(cardElem.children);
-				//log(cards);
+				console.log(cards);
 				cards.forEach((card) => {
-					//log(card);
+					console.log(card);
 
 					// set card1
 					if (card.classList.contains("card1")) {
@@ -256,7 +258,7 @@ function getBackCard(card: Element) {
 	card.innerHTML = image;
 };
 
-function getCardImage(cardValue: number | string, suit: Suit, isFinalCards: boolean) {
+export function getCardImage(cardValue: number | string, suit: Suit, isFinalCards: boolean) {
 
 	switch (cardValue) {
 		case 14:
@@ -473,6 +475,8 @@ export function endTurn(player: Player, newBetHasBeenPlaced: boolean) {
 			startNextPlayerTurn(next_player);
 		}
 	}
+
+	render_ui();
 };
 
 function checkIfRoundComplete(player: Player): boolean {
@@ -547,6 +551,7 @@ function end_of_hand() {
 	updatePlayerCardElems(); // update to show ai cards
 	findHandWinner(); // find the winner of the current hand
 	toggleDealNewHandButton(); // show the deal new hand btn, allow the player to start the next round
+	game.active_player = null; // to turn off betting options ui elem
 }
 
 function compareRankedHands(highestRankedHand: Ranked_Hand, rankedHand: Ranked_Hand): boolean {
@@ -694,9 +699,9 @@ function toggleDealNewHandButton() {
 	}
 };
 
-function dealNewHand() {
-	// console.log('dealing new hand...');
-
+export function dealNewHand() {
+	console.log('dealing new hand...');
+	game.hand_winner = null;
 	dealHand();
 	game.players.forEach((player) => {
 		clearFinalHand(player);
