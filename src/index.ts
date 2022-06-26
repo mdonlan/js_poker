@@ -3,24 +3,24 @@
 // test_func();
 
 // import { App, init_ui, render_ui } from "./UI"
-import { Suit, Card, Player, Game, Player_Type, Ranked_Hand, Hand_Rank, game, Card_Type, Hand_Phase } from "./Game"
-import { SimulateHand } from "./Sim_Hand";
+import { Suit, Card, Player, Game, Player_Type, Ranked_Hand, Hand_Rank, game, Card_Type, Hand_Phase, Hand_Results } from "./Game"
+import { Sim_Hand } from "./Sim_Hand";
+import { log, add_log_msg } from './Log';
 
 interface Card_Info {
 	suit: Suit;
 	type: Card_Type;
 }
 
-// let players: Player[] = [];
-let humanPlayer: Player;
-let communityCards: Card[] = [];
-let roundBetAmount = 0;
-let suits = ["spades", "hearts", "clubs", "diamonds"];
-let showPrivateCards = false; // whether the ai players cards should be displayed
+interface Cards_By_Suit {
+	hearts: Card[];
+	spades: Card[];
+	clubs: Card[];
+	diamonds: Card[];
+}
 
 
-
-// utils
+// DOM utils
 function el(query: string) {
 	return document.querySelector(query);
 }
@@ -28,7 +28,6 @@ function el(query: string) {
 function child_el(target: Element, query: string) {
 	return target.querySelector(query);
 }
-
 
 
 export function create_deck(): Card[] {
@@ -71,7 +70,8 @@ export function create_player(id: number, type: Player_Type): Player {
 		hand_rank: Hand_Rank.UNRANKED,
 		final_hand_cards: [],
 		best_cards: [],
-		highest_value_in_hand: 0
+		highest_value_in_hand: 0,
+		amount_bet_this_round: 0
 	}
 
 	return player;
@@ -95,64 +95,89 @@ function createPlayers(): Player[] {
 	return players;
 };
 
-// function setHumanPlayer() {
-// 	// set the global humanPlayer var
-// 	humanPlayer = players[0];
-// }
-
 function init() {
-	// console.log("init");
 	addEventListeners();
-	// deck = create_deck();
 	game.deck = create_deck();
 	game.players = createPlayers();
-	humanPlayer = game.players[0];
-	game.human = humanPlayer;
-	// init_ui();
+	game.human_player = game.players[0];
 	deal_new_hand();
 };
 
+// function increase_bet_handler(e: Event) {
+// 	console.log("increase bet handler");
+	
+// }
+
+// function decrease_bet_handler(e: Event) {
+// 	console.log("decrease bet handler");
+// }
+
 function addEventListeners() {
 	el(".check").addEventListener("click", () => {
-		console.log("check")
-		end_turn(game.human, false);
-	})
+		end_turn(game.human_player, false);
+	});
+
+	// el(".bet_amount").addEventListener("keydown", bet_amount_keypress_handler);
+	// el(".bet_amount").addEventListener("input", );
+
+	// el(".increase_bet_button").addEventListener("click", increase_bet_handler);
+	// el(".decrease_bet_button").addEventListener("click", decrease_bet_handler);
 
 	// content editable onChange listener for human player bet ammount
 	// let elem: Element | null = document.querySelector('.bet_amount');
 	// if (elem) {
 	// 	elem.addEventListener('keypress', betInputHandler);
 	// }
+
+	const bet_amount = el(".bet_amount");
+	const bet_range_el: HTMLInputElement = el(".bet_range") as HTMLInputElement;
+	bet_range_el.addEventListener("input", e => {
+		// console.log(e.value)
+		// bet_range_el.value = e.;
+		bet_amount.innerHTML = bet_range_el.value;
+		const call_btn_el = el(".call");
+		console.log(parseInt(bet_range_el.value));
+		console.log(game.current_hand.current_bet);
+		if (parseInt(bet_range_el.value) == game.current_hand.current_bet) {
+			console.log("fuck")
+			call_btn_el.classList.remove("hide");
+		} else {
+			call_btn_el.classList.add("hide");
+		}
+	});
+
+	el(".bet").addEventListener("click", () => {
+		console.log('bet');
+	});
+
+	el(".call").addEventListener("click", () => {
+		console.log('call');
+		call_bet(game.human_player);
+		end_turn(game.human_player, false);
+	});
 };
 
-// export function dealNewHand() {
-// 	console.log('dealing new hand...');
-// 	game.hand_winner = null;
-// 	dealHand();
-// 	blinds();
-// 	game.players.forEach((player) => {
-// 		clearFinalHand(player);
-// 	});
-// 	toggle_end_of_hand_el();
-// };
-
-
 function deal_new_hand() {
-
+	add_log_msg("Dealing new hand");
 	game.hand_winner = null;
-	communityCards = [];
+	game.community_cards = [];
 	updateCommunityCardElems();
 
 	
-
 	createRoundOrder(0);
-	blinds();
 
+	// reset each player
 	game.round_order.forEach(player => {
 		player.hand = <Card[]>[];
 		player.final_hand_cards = <Card[]>[];
+		player.amount_bet_this_round = 0;
 		dealCards(player, 2);
 	});
+
+	
+	blinds();
+
+	
 
 	update_player_ui();
 	startBettingRound();
@@ -174,13 +199,6 @@ export function deal_card(deck: Card[]): Card {
 	deck.splice(cardPosInDeck, 1);
 	return card;
 }
-
-// export function deal_specific_card(deck: Card[], suit: Suit, card_type: Card_Type): Card | false {
-// 	for (let card of deck) {
-// 		if (card.suit == suit && card.value == card_type) return card;
-// 	}
-// 	return false;
-// }
 
 export function dev_deal_cards(deck: Card[], cards_to_deal: Card_Info[]): Card[] {
 	const cards: Card[] = [];
@@ -208,11 +226,14 @@ function update_player_ui() {
 		let player_el = el(`.${player.name}`);
 		let cards_el = child_el(player_el, ".cards");
 		let money_el = child_el(player_el, ".player_money");
+		let amount_bet_el = child_el(player_el, ".amount_bet");
 
 		money_el.innerHTML = player.money.toString();
+		amount_bet_el.innerHTML = player.amount_bet_this_round.toString();
+
 
 		for (let card of Array.from(cards_el.children)) {
-			if (showPrivateCards || player.id == 0) {
+			if (game.hand_winner != null || player.id == 0) {
 				if (card.classList.contains("card1")) card.innerHTML = getCardImage(player.hand[0].value, player.hand[0].suit, false);
 				else if (card.classList.contains("card2")) card.innerHTML = getCardImage(player.hand[1].value, player.hand[1].suit, false);
 			} else {
@@ -265,134 +286,93 @@ function dealCommunityCards(numToDeal: number) {
 		cardsDelt++;
 		let cardPosInDeck = Math.floor(Math.random() * game.deck.length);
 		let card = game.deck[cardPosInDeck];
-		communityCards.push(card);
+		game.community_cards.push(card);
 		game.deck.splice(cardPosInDeck, 1);
 	}
 };
 
 function startBettingRound() {
-	console.log("starting hand phase: " + Hand_Phase[game.hand_phase]);
-	// console.log('starting the ' + handStatus.onPhase + " round");
-	// starts the round of betting with whichever player is supposed to open the betting
-
-	// player that starts the round of betting
-	// this will change based off various things
-	// let onPlayerIndex = game.round_start_player_index;
-	// let lastPlayerIndex = onPlayerIndex - 1;
-	// if (lastPlayerIndex < 0) {
-	// 	lastPlayerIndex = players.length - 1;
-	// }
-
-	// let firstPlayerInRound = players[onPlayerIndex];
-	// let lastPlayerInRound = players[lastPlayerIndex];
-
-
-	// currently this always starts at zero, FIX!!
-	
-	// game.active_player = game.round_order[0];
-
-	//log(firstPlayerInRound.name);
-	//log(lastPlayerInRound.name);
-
-	// since this is the start of the round the active player is the firstPlayerInRound
-	// console.log("first_player_in_round: " + firstPlayerInRound.id);
-	// game.active_player = firstPlayerInRound;
 	createRoundOrder(0);
-	
-	
-
-	// check if we need to deal out any community cards to start the round
-	updateCommunityCards();
-	// console.log('active_player')
-	// console.log(game.active_player);
+	updateCommunityCards(); // check if we need to deal out any community cards to start the round
 	start_turn(game.active_player);
-
 };
 
 function updateCommunityCardElems() {
 	// after dealing update the DOM elems to show the community cards
+	const community_cards_el = el(".community_cards");
+	community_cards_el.innerHTML = "";
 
-	let communityCardsElem = document.querySelector(".community_cards");
-	let communityCardsArr: Element[] = [];
-	if (communityCardsElem) {
-		communityCardsArr = Array.from(communityCardsElem.children);
-	}
-	
-
-	if (communityCards.length == 0) {
-		communityCardsArr.forEach((cardElem, index) => {
-			cardElem.innerHTML = "";
-		});
-	} else {
-		communityCardsArr.forEach((cardElem, index) => {
-			communityCards.forEach((card, i) => {
-				if (i == index) {
-					// matched the correct elem index to the array of cards index
-					//cardElem.innerHTML = card.cardValue + card.suit;
-					cardElem.innerHTML = getCardImage(card.value, card.suit, false);
-				}
-			})
-		});
+	for (let card of game.community_cards) {
+		community_cards_el.innerHTML += `<div class="community_card">${getCardImage(card.value, card.suit, false)}</div>`
 	}
 };
 
+function call_bet(player: Player): void {
+	add_money_to_pot(player, game.current_hand.current_bet);
+}
+
 function aiTurn(player: Player) {
 	// an ai players betting action
-	//log('starting ai turn for player ' + player.name);
+	// console.log('starting ai turn for player ' + player.name);
 
 	// do ai turn logic here
 
 	// what does the ai need to do
 	// check if there is a bet, if so decide if ai should call, raise, fold
 	// if no be then decide to bet, check/fold
-	// we decide these things based of the rankin of the ai hand
+	// we decide these things based of the ranking of the ai hand
 
 	//rankHand(player);
 
 	// attempt to simulate the hand
-	// let simHand = new SimulateHand(player.hand, communityCards, player, game.players);
+	let sim_hand: Sim_Hand = new Sim_Hand(game, player);
+	console.log(sim_hand.results);
 
+	// for now just call all bets
+	call_bet(player);
 
 	setTimeout(() => {
 		end_turn(player, false);
-	}, 100);
+	}, 250);
 };
 
 function humanTurn(player: Player) {
-	// the human players betting action
-	// console.log('starting human turn for player ' + player.name);
 	toggle_bet_options_el();
-	betOrCall();
-
+	render_bet_options();
 };
 
-function betOrCall() {
+function render_bet_options() {
 	// set the player bet/call element to show bet or call depending on if the roundBet is > 0
 	// also set the min bet ammount if it is call
 
-	let betElem: Element | null = document.querySelector(".bet");
+	const bet_options_el = el(".bet_options");
+	if (game.current_hand.current_bet > 0) {
+		el(".check").classList.add("bet_button_hide");
+		el(".call").classList.remove("bet_button_hide");
 
-	if (betElem) {
-		if (roundBetAmount > 0) {
-			betElem.innerHTML = "Call";
-			setBetAmountToMin();
-		} else {
-			betElem.innerHTML = "Bet";
-		}
+		el(".bet_amount").innerHTML = game.current_hand.current_bet.toString();
+	} else {
+		el(".check").classList.remove("bet_button_hide");
+		el(".call").classList.add("bet_button_hide");
 	}
 
-};
+	const bet_range_el = el(".bet_range") as HTMLInputElement;
+	bet_range_el.min = game.current_hand.current_bet.toString();
+	bet_range_el.max = game.human_player.money.toString();
+	bet_range_el.value = game.current_hand.current_bet.toString();
 
-function setBetAmountToMin() {
-	// if there is a round bet already when its the players turn
-	// set the betAmount to the min possible to match call
-	let betAmountElem: Element | null = document.querySelector(".bet_amount");
-	if (betAmountElem) {
-		betAmountElem.innerHTML = roundBetAmount.toString();
+	const call_btn_el = el(".call");
+	// console.log(game.current_hand.current_bet, bet_range_el.value)
+	if (game.current_hand.current_bet == parseInt(bet_range_el.value)) {
+		call_btn_el.classList.remove("hide");
+	} else {
+		call_btn_el.classList.add("hide");
 	}
+
 };
 
 export function end_turn(player: Player, newBetHasBeenPlaced: boolean) {
+	add_log_msg("Ending turn for player " + player.name);
 	if (player.type == Player_Type.HUMAN) {
 		toggle_bet_options_el();
 	}
@@ -406,8 +386,6 @@ export function end_turn(player: Player, newBetHasBeenPlaced: boolean) {
 		} else {
 			// if not the end of round then move on to the next player
 			const next_player = findNextPlayer();
-			console.log("next_player: ", next_player)
-			console.log(game.round_order)
 			start_turn(next_player);
 		}
 	}
@@ -415,12 +393,10 @@ export function end_turn(player: Player, newBetHasBeenPlaced: boolean) {
 	const player_el: Element = el(`.${player.name}`);
 	player_el.classList.remove("active_player");
 
-	// render_ui();
+	update_player_ui();
 };
 
 function check_if_round_complete(player: Player): boolean {
-	console.log("checking if round compelte")
-	console.log(player.id, game.round_order[game.round_order.length - 1].id);
 	if (player.id == game.round_order[game.round_order.length - 1].id) {
 		//log('last player in roundOrder has ended their turn')
 		return true;
@@ -430,30 +406,32 @@ function check_if_round_complete(player: Player): boolean {
 };
 
 function findNextPlayer(): Player {
-	// console.log("finding next player")
 	game.round_current_player_index++;
-	// console.log(game.round_order)
 	const next_player: Player = game.round_order[game.round_current_player_index];
-	// console.log("next_player=" + next_player.id)
 	return next_player;
 };
 
 function start_turn(player: Player) {
+	add_log_msg("Starting turn for player " + player.name);
 	const player_el: Element = el(`.${player.name}`);
 	player_el.classList.add("active_player");
+
+	game.active_player = player;
 
 	if (player.type == Player_Type.AI) {
 		aiTurn(player);
 	} else {
 		humanTurn(player);
 	}
+
+	render_dev_ui();
 };
 
 function endOfRound() {
-	console.log("end of round")
+	add_log_msg("End of round");
 	// the current betting round has ended, move on to the next betting round / determine winner
 	// console.log("end of round: " + game.hand_phase);
-	showPrivateCards = false; // make sure not to show the ai players cards, unless it is end of hand
+	// showPrivateCards = false; // make sure not to show the ai players cards, unless it is end of hand
 	
 	switch (game.hand_phase) {
 		case Hand_Phase.PREFLOP:
@@ -488,9 +466,11 @@ function endOfRound() {
 };
 
 function end_of_hand() {
-	showPrivateCards = true;
+	// showPrivateCards = true;
+	add_log_msg("End of hand");
+	
+	find_hand_winner(game); // find the winner of the current hand
 	update_player_ui(); // update to show ai cards
-	findHandWinner(); // find the winner of the current hand
 	toggle_end_of_hand_el(); // show the deal new hand btn, allow the player to start the next round
 	game.active_player = null; // to turn off betting options ui elem
 }
@@ -528,17 +508,25 @@ function compareRankedHands(highestRankedHand: Ranked_Hand, rankedHand: Ranked_H
 	return false;
 };
 
-function findHandWinner() {
-	let highestRankedHand: Ranked_Hand = rankHand(game.players[0]); // do this to avoid unassigned var error, FIX??
+export function find_hand_winner(_game: Game): Hand_Results {
+	let highestRankedHand: Ranked_Hand = rankHand(_game, _game.players[0]); // do this to avoid unassigned var error, FIX??
 	
+
+	const hand_result: Hand_Results = {
+		hand_ranks: [],
+		winner: null
+	};
+
 	// get the hand ranks for each player
 	// then compare it to the highest ranked hand in the current hand
 	// and see if it is higher and if so set them as new winning player
-	game.players.forEach((player) => {
-		let rankedHand = rankHand(player);
+	_game.players.forEach((player) => {
+		let rankedHand = rankHand(_game, player);
 		player.hand_rank = rankedHand.rank;
 		player.final_hand_cards = rankedHand.hand;
 		// console.log("Player " + player.id + ": " + Hand_Rank[rankedHand.rank]);
+
+		hand_result.hand_ranks.push(rankedHand);
 
 		if (highestRankedHand == undefined) highestRankedHand = rankedHand;
 		else {
@@ -548,20 +536,25 @@ function findHandWinner() {
 
 		find_five_used_cards(player);
 
-		displayFinalHand(player);
+		if (!_game.is_sim_game) {
+			displayFinalHand(player);
+		}
 	});
 
-	game.hand_winner = highestRankedHand.player;
+	_game.hand_winner = highestRankedHand.player;
 
-	// render_ui();
-	// set();
+	hand_result.winner = highestRankedHand.player;
 
-	let winnerElem: Element | null = document.querySelector(".winner");
-	if (winnerElem) {
-		winnerElem.innerHTML = highestRankedHand.player.name + "wins the hand!";
-		// console.log(highestRankedHand);
+	if (!_game.is_sim_game) {
+		add_log_msg("Hand winner is " + _game.hand_winner.name);
+		let winnerElem: Element | null = document.querySelector(".winner");
+		if (winnerElem) {
+			winnerElem.innerHTML = highestRankedHand.player.name + "wins the hand!";
+			// console.log(highestRankedHand);
+		}
 	}
 
+	return hand_result;
 };
 
 function clearFinalHand(player: Player) {
@@ -634,12 +627,27 @@ function toggle_end_of_hand_el() {
 };
 
 function blinds() {
-	child_el(el(`.${game.round_order[0].name}`), ".player_name").innerHTML = game.round_order[0].name + " -- DEALER";
-	child_el(el(`.${game.round_order[1].name}`), ".player_name").innerHTML = game.round_order[1].name + " -- BB";
-	child_el(el(`.${game.round_order[2].name}`), ".player_name").innerHTML = game.round_order[2].name + " -- SB";
+	const bb_player = game.round_order[game.round_order.length - 1];
+	const sb_player = game.round_order[game.round_order.length - 2];
+	const dealer_player = game.round_order[game.round_order.length - 3];
 
-	add_money_to_pot(game.round_order[1], game.blinds.small);
-	add_money_to_pot(game.round_order[2], game.blinds.big);
+	child_el(el(`.${dealer_player.name}`), ".player_name").innerHTML = dealer_player.name + " -- DEALER";
+	child_el(el(`.${bb_player.name}`), ".player_name").innerHTML = bb_player.name + " -- BB";
+	child_el(el(`.${sb_player.name}`), ".player_name").innerHTML = sb_player.name + " -- SB";
+
+	add_money_to_pot(sb_player, game.blinds.small);
+	add_money_to_pot(bb_player, game.blinds.big);
+
+	game.current_hand.current_bet = game.blinds.big;
+}
+
+function render_dev_ui() {
+	let str: string = "";
+	str += `active_player: ${game.active_player.name}<br>`;
+	// str += `dealer: ${game.dealer_index}<br>`;
+	// str += `dealer: ${game.dealer}<br>`;
+
+	el(".dev_ui").innerHTML = str;
 }
 
 
@@ -655,7 +663,7 @@ function createRoundOrder(dealer_index: number): void {
 	if (first_player > game.players.length - 1) {
 		first_player -= game.players.length;
 	}
-	console.log(`first_player_id: ${first_player}`);
+	// console.log(`first_player_id: ${first_player}`);
 
 	let start = game.players.slice(first_player);
 	let end = game.players.slice(0, first_player);
@@ -664,7 +672,7 @@ function createRoundOrder(dealer_index: number): void {
 	game.round_current_player_index = 0;
 	game.active_player = game.players[first_player];
 
-	console.log(game.active_player)
+	// console.log(game.active_player)
 };
 
 function toggle_bet_options_el(): void {
@@ -674,6 +682,8 @@ function toggle_bet_options_el(): void {
 function add_money_to_pot(player: Player, value: number) {
 	player.money -= value;
 	game.current_hand.pot += value;
+
+	player.amount_bet_this_round += value;
 
 	el(".pot").innerHTML = `Pot: ${game.current_hand.pot}`; 
 }
@@ -688,9 +698,9 @@ function humanBet() {
 		let betAmount = parseInt(betAmountElem.innerHTML);
 
 	// only accept the click if the betAmount is > 0 >= roundbetAmount
-	if (betAmount > 0 && betAmount >= roundBetAmount) {
+	if (betAmount > 0 && betAmount >= game.current_hand.current_bet) {
 		betPlaced(betAmount);
-		end_turn(humanPlayer, true);
+		end_turn(game.human_player, true);
 	} else {
 		//log('player tried to bet zero, or less than the roundBetAmount')
 	}
@@ -701,52 +711,82 @@ function humanBet() {
 function humanFold() {
 	//log("human fold");
 
-	end_turn(humanPlayer, false);
+	end_turn(game.human_player, false);
 };
 
-function betInputHandler(e: KeyboardEvent) {
-	// handles input from the bet_amount elem
+// function bet_amount_keypress_handler(e: KeyboardEvent) {
+// 	// console.log(e);
 
-	//log(e);
+// 	const target: Element = e.target as Element;
+// 	console.log("target text: " + target.textContent);
 
-	// make sure the most recent input is a number and is <= current players money
-	if (e.keyCode >= 48 && e.keyCode <= 57) {
-		// if entered a number
+// 	if (parseInt(e.key)) { // is number
 
-		// get temp bet amount
-		let newInput: string = e.key;
-		if (e.target instanceof Element) {
-			let oldBetAmount: number = parseInt(e.target.innerHTML);
-			let tempBetAmount: number = oldBetAmount + parseInt(newInput);
+// 		// const current_player_bet: string = (e.target as HTMLInputElement).textContent; // get value of current bet, if empty string set to zero instead of NaN from parseInt()	
+// 		// const new_player_bet = current_player_bet + parseInt(e.key);
 
-			let validBet: boolean = checkValidBet(tempBetAmount);
+// 		// console.log(`current_player_bet: ${current_player_bet}`);
+// 		// console.log(`new_player_bet: ${new_player_bet}`);
 
-			// if not a valid bet, adjust it to min or max
-			if (!validBet) {
-				//log('not a valid bet');
+// 		// if (new_player_bet < game.human_player.money) {
+// 		// 	console.log(`bet: ${new_player_bet}`);
+// 		// 	console.log(`money: ${game.human_player.money}`);
+// 		// 	(e.target as HTMLInputElement).textContent = new_player_bet.toString();
+// 		// 	// e.preventDefault();
+// 		// }
+// 	} else {
+// 		// e.preventDefault();
+// 	}
 
-				if (tempBetAmount < roundBetAmount) {
-					setBetAmountToMin();
-					e.preventDefault(); // prevent newest input if less than minBet
-				} else {
-					// set to player max bet
-					let maxBet = game.players[0].money;
-					//log(maxBet)
-					e.target.innerHTML = maxBet.toString();
-					e.preventDefault(); // prevent newest input if more than player money
-				}
-			}
-		}
-	} else {
-		e.preventDefault(); // prevent entering on newest input if not a number
-	}
+// 	// e.preventDefault();
 
-};
+//         //  if (charCode > 31 && (charCode < 48 || charCode > 57))
+//         //     return false;
+ 
+//         //  return true;
+
+// 	// if (e.key >= 48 && e.key <= 57) {
+
+// 	// }
+	
+// 	// // make sure the most recent input is a number and is <= current players money
+// 	// if (e.keyCode >= 48 && e.keyCode <= 57) {
+// 	// 	// if entered a number
+
+// 	// 	// get temp bet amount
+// 	// 	let newInput: string = e.key;
+// 	// 	if (e.target instanceof Element) {
+// 	// 		let oldBetAmount: number = parseInt(e.target.innerHTML);
+// 	// 		let tempBetAmount: number = oldBetAmount + parseInt(newInput);
+
+// 	// 		let validBet: boolean = checkValidBet(tempBetAmount);
+
+// 	// 		// if not a valid bet, adjust it to min or max
+// 	// 		if (!validBet) {
+// 	// 			//log('not a valid bet');
+
+// 	// 			if (tempBetAmount < game.current_hand.current_bet) {
+// 	// 				setBetAmountToMin();
+// 	// 				e.preventDefault(); // prevent newest input if less than minBet
+// 	// 			} else {
+// 	// 				// set to player max bet
+// 	// 				let maxBet = game.players[0].money;
+// 	// 				//log(maxBet)
+// 	// 				e.target.innerHTML = maxBet.toString();
+// 	// 				e.preventDefault(); // prevent newest input if more than player money
+// 	// 			}
+// 	// 		}
+// 	// 	}
+// 	// } else {
+// 	// 	e.preventDefault(); // prevent entering on newest input if not a number
+// 	// }
+
+// };
 
 function checkValidBet(tempBetAmount: number) {
 	// make sure the human player has entered a valid bet that is <= their money && >= minBet
 
-	if (tempBetAmount <= game.players[0].money && tempBetAmount > roundBetAmount) {
+	if (tempBetAmount <= game.players[0].money && tempBetAmount > game.current_hand.current_bet) {
 		return true;
 	} else {
 		return false;
@@ -765,7 +805,7 @@ function betPlaced(betAmount: number) {
 	// a new valid (is this checked???) bet has been placed
 	// update the roundBetAmount and restart the round order starting at the bet makers index + 1
 
-	roundBetAmount = betAmount;
+	game.current_hand.current_bet = betAmount;
 
 	//log("new roundBetAmount: " + roundBetAmount);
 
@@ -820,9 +860,9 @@ function getPlayerRoundIndex(player: Player): number {
 	return index;
 };
 
-export function rankHand(player: Player): Ranked_Hand  {
+export function rankHand(_game: Game, player: Player): Ranked_Hand  {
 	let hand: Card[] = player.hand;
-	hand = hand.concat(communityCards);
+	hand = hand.concat(_game.community_cards);
 
 	let highestValueInHand: number = 0;
 	let handRank: Hand_Rank = Hand_Rank.HIGH_CARD;
@@ -997,11 +1037,9 @@ function isThreeOfKind(hand: Card[]): boolean {
 };
 
 function isTwoPair(hand: Card[]) {
-	//log('checking if hand is a TwoPair');
 	let pairs = findPairs(hand);
 
 	if (pairs.length == 2) {
-		//log('player ' + player.name + " has two pairs.");
 		return true;
 	} else {
 		return false;
@@ -1009,23 +1047,6 @@ function isTwoPair(hand: Card[]) {
 };
 
 function isPair(hand: Card[]): boolean {
-	//log('checking if hand is a Pair');
-
-	// let pairs = findPairs(hand);
-
-	// if (pairs.length >= 1) {
-	// 	//log('player ' + player.name + " has one pair.");
-	// 	return {
-	// 		result: true,
-	// 		pairs: pairs
-	// 	};
-	// } else {
-	// 	return {
-	// 		result: false,
-	// 		pairs: pairs
-	// 	};
-	// }
-
 	if (findPairs(hand).length > 0) return true;
 	return false;
 };
@@ -1057,13 +1078,6 @@ function findPairs(hand: Card[]): Card[] {
 	return pairs;
 };
 
-function isHighCard(hand: Card[]) {
-	//log('checking if hand is a HighCard');
-
-	hand = sortCards(hand);
-	//log(hand);
-
-};
 
 function sortCards(hand: Card[]): Card[] {
 	return hand.sort(function (a, b) { return b.value - a.value }); // sort hand by card values, highest to lowest
@@ -1071,26 +1085,20 @@ function sortCards(hand: Card[]): Card[] {
 
 function removeDuplicateValues(hand: Card[]): Card[] {
 	// remove any duplicate cards with same values in hand
-
-	let newHand: Card[] = [];
-	hand.forEach((card) => {
-		if (newHand.length == 0) {
-			newHand.push(card);
-		} else {
-			let isDupe = false;
-			newHand.forEach((newHandCard) => {
-				if (card.value == newHandCard.value) {
-					isDupe = true;
-				}
-			});
-
-			if (!isDupe) {
-				newHand.push(card);
+	const new_hand: Card[] = [];
+	for (let card of hand) {
+		if (new_hand.length == 0) new_hand.push(card);
+		else {
+			let is_dupe = false;
+			for (let other_card of hand) {
+				if (card.value == other_card.value) is_dupe = true;
 			}
-		}
-	});
 
-	return newHand;
+			if (!is_dupe) new_hand.push(card);
+		}
+	}
+
+	return new_hand;
 };
 
 function get_cards_with_value(hand: Card[], value: Card_Type): Card[] {
@@ -1103,13 +1111,6 @@ function get_cards_with_value(hand: Card[], value: Card_Type): Card[] {
 }
 
 function get_highest_non_matching_cards(hand: Card[], values: Card_Type[]): Card[] {
-	// let index = 0;
-	// while (player.best_cards.length < 5) {
-	// 	if (player.final_hand_cards[index].value != pairs[0].value) {
-	// 		player.best_cards.push(player.final_hand_cards[index]);
-	// 	}
-	// 	index++;
-	// }
 	const cards: Card[] = [];
 	for (let card of hand) {
 		let match: boolean = false;
@@ -1211,13 +1212,6 @@ function get_four_of_kind_cards(hand: Card[]): Card[] | false {
 	return false;
 }
 
-interface Cards_By_Suit {
-	hearts: Card[];
-	spades: Card[];
-	clubs: Card[];
-	diamonds: Card[];
-}
-
 function get_cards_by_suit(hand: Card[]): Cards_By_Suit {
 	const cards: Cards_By_Suit = {
 		hearts: [],
@@ -1247,18 +1241,16 @@ function get_straight_flush_cards(hand: Card[]): Card[] | false {
 }
 
 function get_royal_flush_cards(hand: Card[]): Card[] | false {
-
+	const straight_cards = get_straight_cards(hand);
+	if (straight_cards && straight_cards[0].value == Card_Type.ACE) {
+		return straight_cards;
+	}
 	return false;
 }
 
 // keep this seperate from handRank func
 function find_five_used_cards(player: Player) {
 	let final_cards = player.final_hand_cards;
-	// console.log('hand lengths')
-	// console.log(final_cards.length, player.final_hand_cards.length);
-	// final_cards = final_cards.slice(0, 4);
-	// console.log(final_cards.length, player.final_hand_cards.length);
-
 
 	switch(player.hand_rank) {
 		case Hand_Rank.HIGH_CARD: {
@@ -1301,57 +1293,36 @@ function find_five_used_cards(player: Player) {
 		}
 		case Hand_Rank.STRAIGHT: {
 			const straight_cards: Card[] | false = get_straight_cards(final_cards);
-			if (straight_cards) {
-				player.best_cards.push(...straight_cards);
-			}
-
+			if (straight_cards) player.best_cards.push(...straight_cards);
 			break;
 		}
 		case Hand_Rank.FLUSH: {
 			const flush_cards: Card[] | false = get_flush_cards(final_cards);
-			if (flush_cards) {
-				player.best_cards.push(...flush_cards);
-			}
-
+			if (flush_cards) player.best_cards.push(...flush_cards);
 			break;
 		}
 		case Hand_Rank.FULL_HOUSE: {
 			const full_house_cards: Card[] | false = get_full_house_cards(final_cards);
-			if (full_house_cards) {
-				player.best_cards.push(...full_house_cards);
-			}
-
+			if (full_house_cards) player.best_cards.push(...full_house_cards);
 			break;
 		}
 		case Hand_Rank.FOUR_OF_KIND: {
 			const four_of_kind_cards: Card[] | false = get_four_of_kind_cards(final_cards);
-			if (four_of_kind_cards) {
-				player.best_cards.push(...four_of_kind_cards);
-			}
-
+			if (four_of_kind_cards) player.best_cards.push(...four_of_kind_cards);
 			break;
 		}
 		case Hand_Rank.STRAIGHT_FLUSH: {
 			const straight_flush_cards: Card[] | false = get_straight_flush_cards(final_cards);
-			if (straight_flush_cards) {
-				player.best_cards.push(...straight_flush_cards);
-			}
-
+			if (straight_flush_cards) player.best_cards.push(...straight_flush_cards);
 			break;
 		}
 		case Hand_Rank.ROYAL_FLUSH: {
 			const royal_flush_cards: Card[] | false = get_royal_flush_cards(final_cards);
-			if (royal_flush_cards) {
-				player.best_cards.push(...royal_flush_cards);
-			}
-
+			if (royal_flush_cards) player.best_cards.push(...royal_flush_cards);			
 			break;
 		}
 	}
 }
-
-
-//let SH = new SimulateHand();
 
 function areWeTestingWithJest() {
     return process.env.JEST_WORKER_ID !== undefined;

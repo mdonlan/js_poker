@@ -17,6 +17,7 @@
 			<div class="player_container">
 				<div class="player0 player">
 					<div class="player_name">Player0</div>
+					<div class="amount_bet"></div>
 					<div class="player_money"></div>
 					<div class="cards">
 						<div class="card1 card"></div>
@@ -31,6 +32,7 @@
 				</div>
 				<div class="player1 player">
 					<div class="player_name">Player1</div>
+					<div class="amount_bet"></div>
 					<div class="player_money"></div>
 					<div class="cards">
 						<div class="card1 card"></div>
@@ -45,6 +47,7 @@
 				</div>
 				<div class="player2 player">
 					<div class="player_name">Player2</div>
+					<div class="amount_bet"></div>
 					<div class="player_money"></div>
 					<div class="cards">
 						<div class="card1 card"></div>
@@ -59,6 +62,7 @@
 				</div>
 				<div class="player3 player">
 					<div class="player_name">Player3</div>
+					<div class="amount_bet"></div>
 					<div class="player_money"></div>
 					<div class="cards">
 						<div class="card1 card"></div>
@@ -73,6 +77,7 @@
 				</div>
 				<div class="player4 player">
 					<div class="player_name">Player4</div>
+					<div class="amount_bet"></div>
 					<div class="player_money"></div>
 					<div class="cards">
 						<div class="card1 card"></div>
@@ -87,6 +92,7 @@
 				</div>
 				<div class="player5 player">
 					<div class="player_name">Player5</div>
+					<div class="amount_bet"></div>
 					<div class="player_money"></div>
 					<div class="cards">
 						<div class="card1 card"></div>
@@ -104,12 +110,13 @@
 			<div class="pot"></div>
 
 			<div class="bet_options bet_options_hide">
-          <div class="check bet_button">Check</div>
-          <div class="bet bet_button" onclick="humanBet()">Bet</div>
-          <div class="fold bet_button" onclick="humanFold()">Fold</div>
-
-          <div class="bet_amount" contenteditable="true" placeholder="Bet Amount"></div>
-        </div>
+				<div class="check bet_button">Check</div>
+				<div class="call bet_button">Call</div>
+				<div class="bet bet_button">Bet</div>
+				<div class="fold bet_button"">Fold</div>
+				<div class="bet_amount"></div>
+				<input type="range" min="1" max="100" value="100" class="bet_range">
+			</div>
 
 		<div class="end_of_hand end_of_hand_hide">
           <div class="winner"></div>
@@ -117,14 +124,16 @@
         </div>
 
 			<div class="community_cards">
-				<div class="community_card_1 community_card"></div>
+				<!-- <div class="community_card_1 community_card"></div>
 				<div class="community_card_2 community_card"></div>
 				<div class="community_card_3 community_card"></div>
 				<div class="community_card_4 community_card"></div>
-				<div class="community_card_5 community_card"></div>
+				<div class="community_card_5 community_card"></div> -->
 			</div>
 			<!-- <div id="root"></div> -->
 		</div>
+
+		<div class="dev_ui"></div>
 	</div>
 </body>
 </html>

@@ -213,6 +213,10 @@ html, body {
   background: #666666;
 }
 
+.bet_button_hide {
+  display: none;
+}
+
 /* set the content editable to use the html placeholder value for the bet_amount element */
 [contenteditable=true]:empty:before{
   content: attr(placeholder);
@@ -243,12 +247,13 @@ html, body {
   top: calc(50% - 125px);
   left: calc(50% - 17.5%);
   display: flex;
-  justify-content: space-around;
+  /* justify-content: center; */
   align-items: center;
+  padding: 1%;
 }
 
 .community_card {
-  width: 15%;
+  width: 20%;
   overflow: hidden;
   text-align: center;
 }
@@ -307,17 +312,32 @@ html, body {
 }
 
 /* base elem for jsx output */
-#root {
+/* #root {
   position: absolute;
   height: 100%;
   width: 100%;
   top: 0px;
   left: 0px;
-}
+} */
 
-.ui {
+/* .ui {
   position: relative;
   z-index: 1;
   height: 100%;
   width: 100%;
+} */
+
+.dev_ui {
+  position: absolute;
+  z-index: 3;
+  background: rgb(23, 34, 85);
+  width: 200px;
+  height: 200px;
+  top: 0px;
+  left: calc(100% - 200px);
+}
+
+/* generic hide utility class */
+.hide {
+  display: none;
 }

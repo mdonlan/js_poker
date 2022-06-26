@@ -6,7 +6,8 @@ build({
     outfile: "./dist/bundle.js",
   bundle: true,
   jsxFactory: "elem",
-  jsxFragment: "Fragment"
+  jsxFragment: "Fragment",
+  sourcemap: true
   
 //   watch: {
 //     onRebuild(error, result) {

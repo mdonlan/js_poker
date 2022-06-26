@@ -29,6 +29,7 @@ export interface Player {
 	final_hand_cards: Card[]; // all cards this player could use in their final hand, including community cards
 	best_cards: Card[]; // the five cards used out of the seven
 	highest_value_in_hand: number;
+	amount_bet_this_round: number;
 }
 
 export interface Ranked_Hand {
@@ -36,6 +37,15 @@ export interface Ranked_Hand {
 	player: Player;
 	highest_value_in_hand: number;
 	hand: Card[];
+}
+
+export interface Hand_Results {
+	hand_ranks: Ranked_Hand[];
+}
+
+export interface Sim_Results {
+	wins: number;
+	run_count: number;
 }
 
 export enum Hand_Rank {
@@ -101,34 +111,39 @@ interface Blinds {
 interface Current_Hand {
 	pot: number;
 	current_bet: number;
+	temp_player_bet: number;
 }
 
 export interface Game {
 	deck: Card[];
+	community_cards: Card[];
 	players: Player[];
-	human: Player | null;
+	human_player: Player | null;
 	hand_phase: Hand_Phase;
 	round_current_player_index: number;
 	// round_start_player_index: number;
 	active_player: Player | null;
 	round_order: Player[];
 	hand_winner: Player | null;
-	dealer: number;
+	// dealer_index: number;
 	blinds: Blinds;
 	current_hand: Current_Hand;
+	is_sim_game: boolean;
 }
 
 export const game: Game = {
 	deck: [],
+	community_cards: [],
 	players: [],
-	human: null,
 	hand_phase: Hand_Phase.PREFLOP,
 	round_current_player_index: 0,
 	// round_start_player_index: 0,
 	round_order: [],
 	active_player: null,
 	hand_winner: null,
-	dealer: 0,
+	// dealer_index: 0,
 	blinds: {small: 5, big: 10},
-	current_hand: {pot: 0, current_bet: 0}
+	current_hand: {pot: 0, current_bet: 0, temp_player_bet: 0},
+	human_player: null,
+	is_sim_game: false
 };
