@@ -23,13 +23,6 @@ export class Sim_Hand {
 	public results: Sim_Result;
 
 	constructor(game: Game, player: Player) {
-		// this.hand = hand;
-		// this.comCards = [...comCards];
-		// this.players = JSON.parse(JSON.stringify(players));
-		// this.player = JSON.parse(JSON.stringify(player));
-		// this.deck = [];
-		console.log("starting sim hand for " + player.name);
-		console.log("hand: ", player.hand);
 		this.game = JSON.parse(JSON.stringify(game));
 		this.game.is_sim_game = true;
 
@@ -37,8 +30,6 @@ export class Sim_Hand {
 
 		this.player = JSON.parse(JSON.stringify(player));
 		this.base_player_copy = JSON.parse(JSON.stringify(player));
-
-		
 
 		this.startSim();
 

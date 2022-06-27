@@ -71,7 +71,8 @@ export function create_player(id: number, type: Player_Type): Player {
 		final_hand_cards: [],
 		best_cards: [],
 		highest_value_in_hand: 0,
-		amount_bet_this_round: 0
+		amount_bet_this_round: 0,
+		has_folded: false
 	}
 
 	return player;
@@ -164,7 +165,12 @@ function deal_new_hand() {
 	updateCommunityCardElems();
 
 	
-	createRoundOrder(4);
+	createRoundOrder(0);
+
+	add_log_msg("Dealer is " + game.round_order[game.round_order.length - 3].name);
+	add_log_msg("Small blind is " + game.round_order[game.round_order.length - 2].name);
+	add_log_msg("Big blind is " + game.round_order[game.round_order.length - 1].name);
+	add_log_msg("Start the betting round with " + game.round_order[0].name);
 
 	// reset each player
 	game.round_order.forEach(player => {
@@ -222,6 +228,7 @@ export function dealCards(player: Player, numCardsToDeal: number) {
 };
 
 function update_player_ui() {
+	document.querySelectorAll(".card").forEach(e => e.innerHTML = "");
 	for (let player of game.players) {
 		let player_el = el(`.${player.name}`);
 		let cards_el = child_el(player_el, ".cards");
@@ -231,13 +238,14 @@ function update_player_ui() {
 		money_el.innerHTML = player.money.toString();
 		amount_bet_el.innerHTML = player.amount_bet_this_round.toString();
 
-
 		for (let card of Array.from(cards_el.children)) {
 			if (game.hand_winner != null || player.id == 0) {
-				if (card.classList.contains("card1")) card.innerHTML = getCardImage(player.hand[0].value, player.hand[0].suit, false);
+				if (player.has_folded) card.innerHTML = "";
+				else if (card.classList.contains("card1")) card.innerHTML = getCardImage(player.hand[0].value, player.hand[0].suit, false);
 				else if (card.classList.contains("card2")) card.innerHTML = getCardImage(player.hand[1].value, player.hand[1].suit, false);
 			} else {
-				if (card.classList.contains("card1")) card.innerHTML = card_back();
+				if (player.has_folded) card.innerHTML = "";
+				else if (card.classList.contains("card1")) card.innerHTML = card_back();
 				else if (card.classList.contains("card2")) card.innerHTML = card_back();
 			}
 		}
@@ -293,6 +301,12 @@ function dealCommunityCards(numToDeal: number) {
 
 function startBettingRound() {
 	// createRoundOrder(0);
+	add_log_msg("Starting new betting round");
+	
+	// createRoundOrder(game.active_player.id)
+	game.round_current_player_index = 0;
+	game.active_player = game.round_order[game.round_current_player_index];
+	add_log_msg("Active player is " + game.active_player.name);
 	updateCommunityCards(); // check if we need to deal out any community cards to start the round
 	start_turn(game.active_player);
 };
@@ -312,31 +326,25 @@ function call_bet(player: Player): void {
 }
 
 function aiTurn(player: Player) {
-	// an ai players betting action
-	// console.log('starting ai turn for player ' + player.name);
-
-	// do ai turn logic here
-
-	// what does the ai need to do
-	// check if there is a bet, if so decide if ai should call, raise, fold
-	// if no be then decide to bet, check/fold
-	// we decide these things based of the ranking of the ai hand
-
-	//rankHand(player);
-
-	// attempt to simulate the hand
-	let sim_hand: Sim_Hand = new Sim_Hand(game, player);
-	console.log(sim_hand.results);
-
-	// for now just call all bets
-	call_bet(player);
-
+	add_log_msg("Starting ai_turn for " + player.name);
 	setTimeout(() => {
-		end_turn(player, false);
-	}, 250);
+		let sim_hand: Sim_Hand = new Sim_Hand(game, player);
+		// console.log(sim_hand.results);
+		add_log_msg("Wins: " + sim_hand.results.wins);
+
+		if (sim_hand.results.wins > 15) {
+			add_log_msg("AI is calling");
+			call_bet(player);
+			end_turn(player, false);
+		} else {
+			add_log_msg("AI is folding");
+			fold(player);
+		}
+	}, 500);
 };
 
 function humanTurn(player: Player) {
+	add_log_msg("Starting human player turn");
 	toggle_bet_options_el();
 	render_bet_options();
 };
@@ -402,7 +410,6 @@ function check_if_round_complete(player: Player): boolean {
 		return true;
 	}
 	return false;
-
 };
 
 function findNextPlayer(): Player {
@@ -412,19 +419,23 @@ function findNextPlayer(): Player {
 };
 
 function start_turn(player: Player) {
-	add_log_msg("Starting turn for player " + player.name);
-	const player_el: Element = el(`.${player.name}`);
-	player_el.classList.add("active_player");
-
-	game.active_player = player;
-
-	if (player.type == Player_Type.AI) {
-		aiTurn(player);
+	if (player.has_folded) {
+		end_turn(player, false);
 	} else {
-		humanTurn(player);
-	}
+		add_log_msg("Starting turn for player " + player.name);
+		const player_el: Element = el(`.${player.name}`);
+		player_el.classList.add("active_player");
 
-	render_dev_ui();
+		game.active_player = player;
+
+		if (player.type == Player_Type.AI) {
+			aiTurn(player);
+		} else {
+			humanTurn(player);
+		}
+
+		render_dev_ui();
+	}
 };
 
 function endOfRound() {
@@ -434,29 +445,30 @@ function endOfRound() {
 	// showPrivateCards = false; // make sure not to show the ai players cards, unless it is end of hand
 	
 	switch (game.hand_phase) {
-		case Hand_Phase.PREFLOP:
-			// console.log('preflop phase has ended');
+		case Hand_Phase.PREFLOP: {
+			add_log_msg("Ending game phase Preflop");
 			game.hand_phase = Hand_Phase.FLOP;
 			startBettingRound();
 			break;
+		}
 		case Hand_Phase.FLOP:
-			// console.log('flop phase has ended');
+			add_log_msg("Ending game phase Flop");
 			game.hand_phase = Hand_Phase.TURN;
 			startBettingRound();
 			break;
 		case Hand_Phase.TURN:
-			// console.log('turn phase has ended');
+			add_log_msg("Ending game phase Turn");
 			game.hand_phase = Hand_Phase.RIVER;
 			startBettingRound();
 			break;
 		case Hand_Phase.RIVER:
-			// console.log('river phase has ended');
+			add_log_msg("Ending game phase River");
 			game.hand_phase = Hand_Phase.SHOWDOWN;
 			endOfRound(); // immediately move to end of showdown, rank hands 
 			//startBettingRound();
 			break;
 		case Hand_Phase.SHOWDOWN:
-			// console.log('showdown phase has ended and the hand has ended');
+			add_log_msg("Ending game phase Showdown");
 
 			// end of the hand
 			end_of_hand();
@@ -494,6 +506,11 @@ function compare_hand_to_highest_ranked(highestRankedHand: Ranked_Hand, rankedHa
 
 	const best_cards_1 = highestRankedHand.player.best_cards;
 	const best_cards_2 = rankedHand.player.best_cards;
+	if (best_cards_1.length != 5 || best_cards_2.length != 5) {
+		// console.log("WhAT THE FUCK");
+		// console.log(best_cards_1, highestRankedHand.rank)
+		// console.log(best_cards_2, rankedHand.rank)
+	}
 	const p1 = findPairs(highestRankedHand.hand);
 	const p2 = findPairs(rankedHand.hand);
 
@@ -787,10 +804,10 @@ function humanBet() {
 
 };
 
-function humanFold() {
-	//log("human fold");
-
-	end_turn(game.human_player, false);
+function fold(player: Player) {
+	player.has_folded = true;
+	// game.players.splice(player.id);
+	end_turn(player, false);
 };
 
 // function bet_amount_keypress_handler(e: KeyboardEvent) {
@@ -920,7 +937,7 @@ function setNewRoundOrderAfterBet(player: Player) {
 	// game.active_player = nextPlayer;
 
 	// create the new round order
-	createRoundOrder(nextPlayerIndex);
+	// createRoundOrder(nextPlayerIndex);
 	// game.active_player = game.round_order[0];
 
 	// since the current player has already bet we need to remove them from the end of the round
@@ -1263,14 +1280,47 @@ function get_full_house_cards(hand: Card[]): Card[] | false {
 	let three_of_kind: Card[] = [];
 	let pair: Card[] = [];
 
+	
 	for (let card of hand) {
 		const temp_cards: Card[] = [];
 		for (let other_card of hand) {
 			if (other_card.value == card.value) temp_cards.push(other_card);
 		}
+	
+		if (temp_cards.length == 3) {
+			// check to to see if there are two sets of 3 (this is still a 7 card hand)
+			// if so then check to see which on to use as the pair
+			if (three_of_kind.length == 0) {
+				three_of_kind = temp_cards;
+			} else {
+				if (temp_cards[0].value > three_of_kind[0].value) {
 
-		if (temp_cards.length == 3) three_of_kind = temp_cards;
-		else if (temp_cards.length == 2) pair = temp_cards;
+					pair = three_of_kind.slice(0, 2);
+					three_of_kind = temp_cards;
+				} else {
+					pair = temp_cards.slice(0, 2);
+				}
+			}
+		} else if (temp_cards.length == 2) {
+			pair = temp_cards;
+		}
+
+		// if (temp_cards.length == 3) three_of_kind = temp_cards;
+		// else if (temp_cards.length == 2) pair = temp_cards;
+	}
+
+	
+	
+	console.assert(three_of_kind.length == 3);
+	console.assert(pair.length == 2);
+
+	if (three_of_kind.length != 3) {
+		console.log("three of kind is not == to 3");
+		console.log(three_of_kind)
+	}
+	if (pair.length != 2) {
+		console.log("pair is not == to 2");
+		console.log(pair)
 	}
 
 	if (three_of_kind.length == 3 && pair.length == 2) return three_of_kind.concat(pair);
@@ -1331,6 +1381,7 @@ function get_royal_flush_cards(hand: Card[]): Card[] | false {
 // keep this seperate from handRank func
 function find_five_used_cards(player: Player) {
 	let final_cards = player.final_hand_cards;
+	player.best_cards = [];
 
 	switch(player.hand_rank) {
 		case Hand_Rank.HIGH_CARD: {
@@ -1389,6 +1440,8 @@ function find_five_used_cards(player: Player) {
 		case Hand_Rank.FOUR_OF_KIND: {
 			const four_of_kind_cards: Card[] | false = get_four_of_kind_cards(final_cards);
 			if (four_of_kind_cards) player.best_cards.push(...four_of_kind_cards);
+			const hightest_non_matching = get_highest_non_matching_cards(final_cards, [four_of_kind_cards[0].value]);
+			player.best_cards.push(...hightest_non_matching.slice(0, 1));
 			break;
 		}
 		case Hand_Rank.STRAIGHT_FLUSH: {

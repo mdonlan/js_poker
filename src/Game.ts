@@ -30,6 +30,7 @@ export interface Player {
 	best_cards: Card[]; // the five cards used out of the seven
 	highest_value_in_hand: number;
 	amount_bet_this_round: number;
+	has_folded: boolean;
 }
 
 export interface Ranked_Hand {
@@ -114,6 +115,7 @@ interface Current_Hand {
 	current_bet: number;
 	temp_player_bet: number;
 }
+
 
 export interface Game {
 	deck: Card[];
