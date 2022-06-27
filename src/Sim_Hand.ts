@@ -28,6 +28,8 @@ export class Sim_Hand {
 		// this.players = JSON.parse(JSON.stringify(players));
 		// this.player = JSON.parse(JSON.stringify(player));
 		// this.deck = [];
+		console.log("starting sim hand for " + player.name);
+		console.log("hand: ", player.hand);
 		this.game = JSON.parse(JSON.stringify(game));
 		this.game.is_sim_game = true;
 
@@ -48,11 +50,11 @@ export class Sim_Hand {
 
 	startSim() {
 		// start a new simulation of a hand
-		for (let i = 0; i < 10; i++) {
+		for (let i = 0; i < 100; i++) {
 			this.set_deck();
 			this.deal_rest_of_com_cards();
 			this.deal_other_players();
-			this.deal_rest_of_hand();
+			// this.deal_rest_of_hand();
 			this.get_winner();
 			this.reset();
 		}
@@ -67,14 +69,14 @@ export class Sim_Hand {
 		// set the deck to have all cards, except for the cards the current ai has and the comCards
 		this.game.deck = create_deck();
 		let usedCards = this.player.hand.concat(this.game.community_cards);
-		let used = this.player.hand;
+		// let used = this.player.hand;
 
 		let sortedDeck = [];
 		for (let i = 0; i < this.game.deck.length; i++) {
 			let card = this.game.deck[i];
 			let matched = false;
-			for (let j = 0; j < used.length; j++) {
-				let usedCard = used[j];
+			for (let j = 0; j < usedCards.length; j++) {
+				let usedCard = usedCards[j];
 
 				if (card.id == usedCard.id) {
 					matched = true;
@@ -104,10 +106,12 @@ export class Sim_Hand {
 		// first reset their hands
 
 		this.game.players.forEach((player) => {
-			player.hand = [];
+			if (player.id != this.player.id) {
+				player.hand = [];
 
-			while (player.hand.length < 2) {
-				player.hand.push(this.deal_card());
+				while (player.hand.length < 2) {
+					player.hand.push(this.deal_card());
+				}
 			}
 		});
 	};
@@ -119,17 +123,19 @@ export class Sim_Hand {
 		return card;
 	};
 
-	deal_rest_of_hand() {
-		// once everything else is setup deal out the rest of the community cards
-		while (this.game.community_cards.length < 5) {
-			this.game.community_cards.push(this.deal_card());
-		}
-	};
+	// deal_rest_of_hand() {
+	// 	// once everything else is setup deal out the rest of the community cards
+	// 	while (this.game.community_cards.length < 5) {
+	// 		this.game.community_cards.push(this.deal_card());
+	// 	}
+	// };
 
 	get_winner() {
 		// rank all the players and find who has the best hand
 		// eval winner
 		const results = find_hand_winner(this.game);
+		// console.log("sim hand get winner results", results);
+		// console.log("winner = " + results.winner.name)
 		if (results.winner.id == this.player.id) {
 			this.wins++;
 		}

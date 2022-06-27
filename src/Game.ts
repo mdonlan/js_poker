@@ -40,10 +40,11 @@ export interface Ranked_Hand {
 }
 
 export interface Hand_Results {
-	hand_ranks: Ranked_Hand[];
+	// hand_ranks: Ranked_Hand[];
+	winner: Player;
 }
 
-export interface Sim_Results {
+export interface Sim_Result {
 	wins: number;
 	run_count: number;
 }
