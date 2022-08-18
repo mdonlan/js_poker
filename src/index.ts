@@ -66,7 +66,7 @@ export function create_player(id: number, type: Player_Type): Player {
 		money: 1000,
 		name: "player" + id,
 		type: type,
-		round_bet: 0,
+		// round_bet: 0,
 		hand_rank: Hand_Rank.UNRANKED,
 		final_hand_cards: [],
 		best_cards: [],
@@ -101,6 +101,9 @@ function init() {
 	game.deck = create_deck();
 	game.players = createPlayers();
 	game.human_player = game.players[0];
+
+	el(".deal_new_hand_button").addEventListener("click", deal_new_hand);
+
 	deal_new_hand();
 };
 
@@ -160,8 +163,11 @@ function addEventListeners() {
 
 function deal_new_hand() {
 	add_log_msg("Dealing new hand");
+	
 	game.hand_winner = null;
 	game.community_cards = [];
+	// game.hand_phase = Hand_Phase.PREFLOP;
+	// game.
 	updateCommunityCardElems();
 
 	createRoundOrder(0);
@@ -177,12 +183,40 @@ function deal_new_hand() {
 	// add_log_msg("Start the betting round with " + first_to_bet.name);
 
 	// reset each player
-	game.round_order.forEach(player => {
+	game.players.forEach(player => {
 		player.hand = <Card[]>[];
 		player.final_hand_cards = <Card[]>[];
-		player.amount_bet_this_round = 0;
+		player.hand_rank = Hand_Rank.UNRANKED;
+		// player.amount_bet_this_round = 0;
+		player.best_cards = [];
+		player.highest_value_in_hand = 0;
+		player.has_folded = false;
 		dealCards(player, 2);
+
+		clear_final_hand(player);
 	});
+
+	el(".end_of_hand").classList.add("end_of_hand_hide");
+
+	// update_player_ui();
+
+	console.log(game.players)
+	
+
+	// let player: Player = {
+	// 	id: id,
+	// 	hand: [],
+	// 	money: 1000,
+	// 	name: "player" + id,
+	// 	type: type,
+	// 	round_bet: 0,
+	// 	hand_rank: Hand_Rank.UNRANKED,
+	// 	final_hand_cards: [],
+	// 	best_cards: [],
+	// 	highest_value_in_hand: 0,
+	// 	amount_bet_this_round: 0,
+	// 	has_folded: false
+	// }
 
 	blinds();
 
@@ -311,15 +345,17 @@ function startBettingRound() {
 	if (game.hand_phase != Hand_Phase.PREFLOP) {
 		// reset current hand if not first round (blinds)
 		game.current_hand.current_bet = 0;
-		game.current_hand.pot = 0;
+		// game.current_hand.pot = 0;
 		game.current_hand.temp_player_bet = 0;
 
 		el(".pot").innerHTML = `Pot: ${game.current_hand.pot}`; 
+
+		game.players.forEach(player => {
+			player.amount_bet_this_round = 0;
+		});
 	}
 
-	game.players.forEach(player => {
-		player.amount_bet_this_round = 0;
-	});
+	
 
 	// add_log_msg("Active player is " + game.active_player.name);
 	updateCommunityCards(); // check if we need to deal out any community cards to start the round
@@ -347,16 +383,30 @@ function aiTurn(player: Player) {
 	setTimeout(() => {
 		let sim_hand: Sim_Hand = new Sim_Hand(game, player);
 		// console.log(sim_hand.results);
-		add_log_msg("Wins: " + sim_hand.results.wins);
+		const win_percent = (sim_hand.results.wins / sim_hand.results.run_count * 100).toFixed();
+		add_log_msg(`AI analysis: Win %: ${win_percent}`);
 
-		if (sim_hand.results.wins > 15) {
-			// add_log_msg(`${player.name} is calling`);
+		const amount_owed = game.current_hand.current_bet - player.amount_bet_this_round;
+
+		
+		// if a bet is below 3% of players money then just call even with bad hand
+		const cheap_bet_amount = player.money * .03;
+
+		if (amount_owed < cheap_bet_amount) {
 			call_bet(player);
 			end_turn(player, false);
 		} else {
-			add_log_msg("AI is folding");
-			fold(player);
+			if (sim_hand.results.wins > 15) {
+				// add_log_msg(`${player.name} is calling`);
+				call_bet(player);
+				end_turn(player, false);
+			} else {
+				add_log_msg("AI is folding");
+				fold(player);
+			}
 		}
+
+		
 	}, 500);
 };
 
@@ -399,7 +449,7 @@ function render_bet_options() {
 export function end_turn(player: Player, newBetHasBeenPlaced: boolean) {
 	
 	if (player.has_folded) {
-		add_log_msg(`Skipping turn b/c player ${player.name} has folded`);
+		add_log_msg(`Ending turn b/c player ${player.name} has folded`);
 	} else {
 		add_log_msg("Ending turn for player " + player.name);
 	}
@@ -679,18 +729,14 @@ export function find_hand_winner(_game: Game): Hand_Results {
 	return hand_result;
 };
 
-function clearFinalHand(player: Player) {
-	let playerElem = document.querySelector("." + player.name);
-	if (playerElem) {
-		let children = Array.from(playerElem.children);
-		children.forEach((child) => {
-			if (child.classList.contains("final_hand")) {
-				let finalHandElem = child;
-				// console.log(finalHandElem)
-				finalHandElem.innerHTML = "";
-			}
-		});
-	}
+function clear_final_hand(player: Player) {
+	const player_elem = el(`.${player.name}`);
+	const final_hand_elem = player_elem.querySelector(':scope > .final_hand');
+	const final_hand_children = final_hand_elem.querySelectorAll(':scope > div');
+	
+	final_hand_children.forEach(child => {
+		child.innerHTML = "";
+	})
 };
 
 

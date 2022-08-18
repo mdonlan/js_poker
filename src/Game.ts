@@ -24,7 +24,7 @@ export interface Player {
 	money: number;
 	name: string;
 	type: Player_Type;
-	round_bet: number;
+	// round_bet: number;
 	hand_rank: Hand_Rank;
 	final_hand_cards: Card[]; // all cards this player could use in their final hand, including community cards
 	best_cards: Card[]; // the five cards used out of the seven

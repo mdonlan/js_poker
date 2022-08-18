@@ -1,4 +1,7 @@
 todo:
 
-1. deal with basic money, blinds
-2. fix straights to include Ace as low number too!
+* fix straights to include Ace as low number too!
+* make the ai be able to bet
+    base this on their hand strength + how much money they have
+* make it more clear whats happening as the ai does their turn
+* 

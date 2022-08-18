@@ -240,11 +240,11 @@ html, body {
 /* community cards */
 
 .community_cards {
-  height: 20%;
+  height: 175px;
   width: 35%;
   background: rgb(8, 51, 31);
   position: absolute;
-  top: calc(50% - 125px);
+  top: calc(30%);
   left: calc(50% - 17.5%);
   display: flex;
   /* justify-content: center; */
@@ -260,7 +260,7 @@ html, body {
 
 .pot {
   position: absolute;
-  top: 50%;
+  top: calc(30% + 250px);
   left: 50%;
   background: red;
   z-index: 2;
@@ -277,7 +277,7 @@ html, body {
   top: calc(50% + 25px);
   left: calc(50% - 150px);
   background: #111111;
-  z-index: 1;
+  z-index: 2;
   
   /* position: absolute;
   height: 100px;
@@ -301,6 +301,7 @@ html, body {
 .deal_new_hand_button {
   background:rgb(8, 51, 31);
   padding: 5px;
+  cursor: pointer;
 }
 
 .deal_new_hand_button:hover {
@@ -327,15 +328,20 @@ html, body {
   width: 100%;
 } */
 
-.log_messages {
+.log {
   position: absolute;
-  z-index: 3;
-  background: rgb(23, 34, 85);
-  width: 200px;
-  height: 400px;
   top: 0px;
   left: calc(100% - 200px);
-  overflow-y: auto;
+  overflow: auto;
+  display: flex;
+  flex-direction: column-reverse;
+  height: 400px;
+  background: rgb(23, 34, 85);
+  z-index: 3;
+}
+
+.log_messages {
+
 }
 
 /* generic hide utility class */
