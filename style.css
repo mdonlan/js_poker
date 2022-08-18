@@ -327,14 +327,15 @@ html, body {
   width: 100%;
 } */
 
-.dev_ui {
+.log_messages {
   position: absolute;
   z-index: 3;
   background: rgb(23, 34, 85);
   width: 200px;
-  height: 200px;
+  height: 400px;
   top: 0px;
   left: calc(100% - 200px);
+  overflow-y: auto;
 }
 
 /* generic hide utility class */

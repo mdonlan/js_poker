@@ -164,13 +164,17 @@ function deal_new_hand() {
 	game.community_cards = [];
 	updateCommunityCardElems();
 
-	
 	createRoundOrder(0);
 
-	add_log_msg("Dealer is " + game.round_order[game.round_order.length - 3].name);
-	add_log_msg("Small blind is " + game.round_order[game.round_order.length - 2].name);
-	add_log_msg("Big blind is " + game.round_order[game.round_order.length - 1].name);
-	add_log_msg("Start the betting round with " + game.round_order[0].name);
+	const dealer = game.round_order[game.round_order.length - 3];
+	const small_blind = game.round_order[game.round_order.length - 2];
+	const big_blind = game.round_order[game.round_order.length - 1];
+	const first_to_bet = game.round_order[0];
+
+	add_log_msg("Dealer is " + dealer.name);
+	add_log_msg(`Small blind is $${game.blinds.small} to ${small_blind.name}`);
+	add_log_msg(`Big blind is $${game.blinds.big} to ${big_blind.name}`);
+	// add_log_msg("Start the betting round with " + first_to_bet.name);
 
 	// reset each player
 	game.round_order.forEach(player => {
@@ -180,10 +184,7 @@ function deal_new_hand() {
 		dealCards(player, 2);
 	});
 
-	
 	blinds();
-
-	
 
 	update_player_ui();
 	startBettingRound();
@@ -306,7 +307,21 @@ function startBettingRound() {
 	// createRoundOrder(game.active_player.id)
 	game.round_current_player_index = 0;
 	game.active_player = game.round_order[game.round_current_player_index];
-	add_log_msg("Active player is " + game.active_player.name);
+	
+	if (game.hand_phase != Hand_Phase.PREFLOP) {
+		// reset current hand if not first round (blinds)
+		game.current_hand.current_bet = 0;
+		game.current_hand.pot = 0;
+		game.current_hand.temp_player_bet = 0;
+
+		el(".pot").innerHTML = `Pot: ${game.current_hand.pot}`; 
+	}
+
+	game.players.forEach(player => {
+		player.amount_bet_this_round = 0;
+	});
+
+	// add_log_msg("Active player is " + game.active_player.name);
 	updateCommunityCards(); // check if we need to deal out any community cards to start the round
 	start_turn(game.active_player);
 };
@@ -322,7 +337,9 @@ function updateCommunityCardElems() {
 };
 
 function call_bet(player: Player): void {
-	add_money_to_pot(player, game.current_hand.current_bet);
+	const amount = game.current_hand.current_bet - player.amount_bet_this_round;
+	add_log_msg(`${player.name} calls with $${amount}`);
+	add_money_to_pot(player, amount);
 }
 
 function aiTurn(player: Player) {
@@ -333,7 +350,7 @@ function aiTurn(player: Player) {
 		add_log_msg("Wins: " + sim_hand.results.wins);
 
 		if (sim_hand.results.wins > 15) {
-			add_log_msg("AI is calling");
+			// add_log_msg(`${player.name} is calling`);
 			call_bet(player);
 			end_turn(player, false);
 		} else {
@@ -380,7 +397,13 @@ function render_bet_options() {
 };
 
 export function end_turn(player: Player, newBetHasBeenPlaced: boolean) {
-	add_log_msg("Ending turn for player " + player.name);
+	
+	if (player.has_folded) {
+		add_log_msg(`Skipping turn b/c player ${player.name} has folded`);
+	} else {
+		add_log_msg("Ending turn for player " + player.name);
+	}
+
 	if (player.type == Player_Type.HUMAN) {
 		toggle_bet_options_el();
 	}
@@ -423,6 +446,9 @@ function start_turn(player: Player) {
 		end_turn(player, false);
 	} else {
 		add_log_msg("Starting turn for player " + player.name);
+		add_log_msg(`Current bet is $${game.current_hand.current_bet}`);
+		add_log_msg(`${player.name} has put up $${player.amount_bet_this_round}`);
+		add_log_msg(`${player.name} needs to call $${game.current_hand.current_bet - player.amount_bet_this_round}`);
 		const player_el: Element = el(`.${player.name}`);
 		player_el.classList.add("active_player");
 
@@ -434,7 +460,7 @@ function start_turn(player: Player) {
 			humanTurn(player);
 		}
 
-		render_dev_ui();
+		
 	}
 };
 
@@ -737,14 +763,7 @@ function blinds() {
 	game.current_hand.current_bet = game.blinds.big;
 }
 
-function render_dev_ui() {
-	let str: string = "";
-	str += `active_player: ${game.active_player.name}<br>`;
-	// str += `dealer: ${game.dealer_index}<br>`;
-	// str += `dealer: ${game.dealer}<br>`;
 
-	el(".dev_ui").innerHTML = str;
-}
 
 
 // round_order[0] = dealer
@@ -1314,14 +1333,14 @@ function get_full_house_cards(hand: Card[]): Card[] | false {
 	console.assert(three_of_kind.length == 3);
 	console.assert(pair.length == 2);
 
-	if (three_of_kind.length != 3) {
-		console.log("three of kind is not == to 3");
-		console.log(three_of_kind)
-	}
-	if (pair.length != 2) {
-		console.log("pair is not == to 2");
-		console.log(pair)
-	}
+	// if (three_of_kind.length != 3) {
+	// 	console.log("three of kind is not == to 3");
+	// 	console.log(three_of_kind)
+	// }
+	// if (pair.length != 2) {
+	// 	console.log("pair is not == to 2");
+	// 	console.log(pair)
+	// }
 
 	if (three_of_kind.length == 3 && pair.length == 2) return three_of_kind.concat(pair);
 

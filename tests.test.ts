@@ -43,7 +43,7 @@ describe("Test Hands", () => {
             {suit: Suit.SPADES, type: Card_Type.SEVEN}
         ]);
         player.hand = hand;
-        expect(rankHand(player).rank).toBe(Hand_Rank.HIGH_CARD);
+        expect(rankHand(game, player).rank).toBe(Hand_Rank.HIGH_CARD);
     })
 
 
@@ -56,7 +56,7 @@ describe("Test Hands", () => {
             {suit: Suit.SPADES, type: Card_Type.SEVEN}
         ]);
         player.hand = hand;
-        expect(rankHand(player).rank).toBe(Hand_Rank.PAIR);
+        expect(rankHand(game, player).rank).toBe(Hand_Rank.PAIR);
     })
 })
 
