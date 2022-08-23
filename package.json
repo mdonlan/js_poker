@@ -7,7 +7,7 @@
     "build_old": "nodemon --watch ./src esbuild.config.js && tsc",
     
     "build": "nodemon --watch 'src/**/*' -e ts,tsx --exec 'node esbuild.config.js && tsc && http-server'",
-    "test": "jest"
+    "test": "jest --silent=false"
   },
   "repository": {
     "type": "git",

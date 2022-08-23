@@ -152,6 +152,8 @@ function addEventListeners() {
 
 	el(".bet").addEventListener("click", () => {
 		console.log('bet');
+		humanBet();
+		
 	});
 
 	el(".call").addEventListener("click", () => {
@@ -166,8 +168,9 @@ function deal_new_hand() {
 	
 	game.hand_winner = null;
 	game.community_cards = [];
-	// game.hand_phase = Hand_Phase.PREFLOP;
-	// game.
+	game.current_hand.pot = 0;
+	game.hand_phase = Hand_Phase.PREFLOP;
+	
 	updateCommunityCardElems();
 
 	createRoundOrder(0);
@@ -182,12 +185,13 @@ function deal_new_hand() {
 	add_log_msg(`Big blind is $${game.blinds.big} to ${big_blind.name}`);
 	// add_log_msg("Start the betting round with " + first_to_bet.name);
 
+	console.log("reseting players")
 	// reset each player
 	game.players.forEach(player => {
 		player.hand = <Card[]>[];
 		player.final_hand_cards = <Card[]>[];
 		player.hand_rank = Hand_Rank.UNRANKED;
-		// player.amount_bet_this_round = 0;
+		player.amount_bet_this_round = 0;
 		player.best_cards = [];
 		player.highest_value_in_hand = 0;
 		player.has_folded = false;
@@ -195,6 +199,7 @@ function deal_new_hand() {
 
 		clear_final_hand(player);
 	});
+	
 
 	el(".end_of_hand").classList.add("end_of_hand_hide");
 
@@ -344,12 +349,9 @@ function startBettingRound() {
 	
 	if (game.hand_phase != Hand_Phase.PREFLOP) {
 		// reset current hand if not first round (blinds)
+		console.log("reseting current bet and player bets")
 		game.current_hand.current_bet = 0;
-		// game.current_hand.pot = 0;
 		game.current_hand.temp_player_bet = 0;
-
-		el(".pot").innerHTML = `Pot: ${game.current_hand.pot}`; 
-
 		game.players.forEach(player => {
 			player.amount_bet_this_round = 0;
 		});
@@ -378,6 +380,12 @@ function call_bet(player: Player): void {
 	add_money_to_pot(player, amount);
 }
 
+function place_bet(player: Player, amount: number) {
+	add_log_msg(`${player.name} places best of $${amount}`);
+	add_money_to_pot(player, amount);
+	game.current_hand.current_bet += amount;
+}
+
 function aiTurn(player: Player) {
 	add_log_msg("Starting ai_turn for " + player.name);
 	setTimeout(() => {
@@ -387,6 +395,15 @@ function aiTurn(player: Player) {
 		add_log_msg(`AI analysis: Win %: ${win_percent}`);
 
 		const amount_owed = game.current_hand.current_bet - player.amount_bet_this_round;
+
+
+		let should_raise_or_bet: boolean = false;
+
+		// figure out if the ai should either place a new bet or raise the current bet
+		// do this based on the ai hand strength and how much money they have?
+
+		// if win percent is heigh enough then place/raise bet
+		// how much to bet? determine risk
 
 		
 		// if a bet is below 3% of players money then just call even with bad hand
@@ -461,6 +478,8 @@ export function end_turn(player: Player, newBetHasBeenPlaced: boolean) {
 	// if a new bet has been placed then reset the round order
 	if (newBetHasBeenPlaced) {
 		setNewRoundOrderAfterBet(player);
+		const next_player = findNextPlayer();
+		start_turn(next_player);
 	} else { // if no new bet then continue the round as normal
 		if (check_if_round_complete(player)) {
 			endOfRound();
@@ -564,11 +583,128 @@ function end_of_hand() {
 }
 
 // returns true if the new hand is better than the highest ranked hand;
-enum Compare_Result {
+export enum Compare_Result {
 	WIN,
 	LOSE,
 	TIE
 };
+
+// WIN = hand_one won
+// LOSE = hand_two won
+export function compare_hands(ranked_hand_one: Ranked_Hand, ranked_hand_two: Ranked_Hand): Compare_Result {
+	find_five_used_cards(ranked_hand_one.player);
+	find_five_used_cards(ranked_hand_two.player);
+
+	const hand_one_cards = ranked_hand_one.hand;
+	const hand_two_cards = ranked_hand_two.hand;
+
+	if (ranked_hand_one.rank > ranked_hand_two.rank) return Compare_Result.WIN;
+	if (ranked_hand_one.rank < ranked_hand_two.rank) return Compare_Result.LOSE;
+
+	const hand_one_pairs: number[] = findPairs(ranked_hand_one.hand); 
+	const hand_two_pairs: number[] = findPairs(ranked_hand_two.hand);
+	
+
+	switch (ranked_hand_one.rank) {
+		default: {
+			return Compare_Result.LOSE;
+		}
+		case Hand_Rank.HIGH_CARD: {
+			
+			for (let i = 0; i < 1; i++) {
+				if (hand_one_cards[i].value > hand_two_cards[i].value) return Compare_Result.WIN; 
+				if (hand_one_cards[i].value < hand_two_cards[i].value) return Compare_Result.LOSE;
+			}
+			
+			return Compare_Result.TIE;
+		}
+		case Hand_Rank.TWO_PAIR: {
+			if (hand_one_pairs[0] > hand_two_pairs[0]) return Compare_Result.WIN;
+			if (hand_one_pairs[0] < hand_two_pairs[0]) return Compare_Result.LOSE;
+			if (hand_one_pairs[1] > hand_two_pairs[1]) return Compare_Result.WIN;
+			if (hand_one_pairs[1] < hand_two_pairs[1]) return Compare_Result.LOSE;
+
+			if (hand_one_cards[4].value > hand_two_cards[4].value) return Compare_Result.WIN;
+			if (hand_one_cards[4].value < hand_two_cards[4].value) return Compare_Result.LOSE;
+
+			return Compare_Result.TIE;
+		}
+	}
+
+	return Compare_Result.TIE;
+	
+	// 	case Hand_Rank.THREE_OF_KIND: {
+	// 		if (highest_ranked_pairs[0] > current_hand_pairs[0]) result = Compare_Result.LOSE;
+	// 		else if (highest_ranked_pairs[0] < current_hand_pairs[0]) result = Compare_Result.WIN;
+	// 		else {
+	// 			if (highest_ranked_best_cards[3].value > current_hand_best_cards[3].value) result = Compare_Result.LOSE;
+	// 			else if (highest_ranked_best_cards[3].value < current_hand_best_cards[3].value) result = Compare_Result.WIN;
+	// 			else {
+	// 				if (highest_ranked_best_cards[4].value > current_hand_best_cards[4].value) result = Compare_Result.LOSE;
+	// 				else if (highest_ranked_best_cards[4].value < current_hand_best_cards[4].value) result = Compare_Result.WIN;
+	// 				else result = Compare_Result.TIE;
+	// 			}
+	// 		}
+	// 		break;
+	// 	}
+	// 	case Hand_Rank.STRAIGHT: {
+	// 		if (highest_ranked_best_cards[0].value > current_hand_best_cards[0].value) result = Compare_Result.LOSE;
+	// 		else if (highest_ranked_best_cards[0].value < current_hand_best_cards[0].value) result = Compare_Result.WIN;
+	// 		else Compare_Result.TIE;
+	// 		break;
+	// 	}
+	// 	case Hand_Rank.FLUSH: {
+	// 		if (highest_ranked_best_cards[0].value > current_hand_best_cards[0].value) result = Compare_Result.LOSE;
+	// 		else if (highest_ranked_best_cards[0].value < current_hand_best_cards[0].value) result = Compare_Result.WIN;
+	// 		else Compare_Result.TIE;
+	// 		break;
+	// 	}
+	// 	case Hand_Rank.FULL_HOUSE: {
+	// 		if (highest_ranked_best_cards[0].value > current_hand_best_cards[0].value) {
+	// 			return Compare_Result.LOSE;
+	// 		} else if (highest_ranked_best_cards[0].value < current_hand_best_cards[0].value) {
+	// 			return Compare_Result.WIN;
+	// 		} else {
+	// 			if (highest_ranked_best_cards[3].value > current_hand_best_cards[0].value) {
+	// 				return Compare_Result.LOSE;
+	// 			} else if (highest_ranked_best_cards[3].value < current_hand_best_cards[3].value) {
+	// 				return Compare_Result.WIN;
+	// 			} 
+	// 		}
+	// 		// if (highest_ranked_pairs[0] > current_hand_pairs[0]) result = Compare_Result.LOSE;
+	// 		// else if (highest_ranked_pairs[0] < current_hand_pairs[0]) result = Compare_Result.WIN;
+	// 		// else {
+	// 		// 	if (highest_ranked_pairs[1] > current_hand_pairs[1]) result = Compare_Result.LOSE;
+	// 		// 	else if (current_hand_pairs[1] < current_hand_pairs[1]) result = Compare_Result.WIN;
+	// 		// 	else result = Compare_Result.TIE;
+	// 		// }
+	// 		break;
+	// 	}
+	// 	case Hand_Rank.FOUR_OF_KIND: {
+	// 		if (highest_ranked_best_cards[0].value > current_hand_best_cards[0].value) result = Compare_Result.LOSE;
+	// 		else if (highest_ranked_best_cards[0].value < current_hand_best_cards[0].value) result = Compare_Result.WIN;
+	// 		else {
+	// 			if (highest_ranked_best_cards[4].value > current_hand_best_cards[4].value) result = Compare_Result.LOSE;
+	// 			else if (highest_ranked_best_cards[4].value < current_hand_best_cards[4].value) result = Compare_Result.WIN;
+	// 			else result = Compare_Result.TIE;
+	// 		}
+	// 		break;
+	// 	}
+	// 	case Hand_Rank.STRAIGHT_FLUSH: {
+	// 		if (highest_ranked_best_cards[0].value > current_hand_best_cards[0].value) result = Compare_Result.LOSE;
+	// 		else if (highest_ranked_best_cards[0].value < current_hand_best_cards[0].value) result = Compare_Result.WIN;
+	// 		else Compare_Result.TIE;
+	// 		break;
+	// 	}
+	// 	case Hand_Rank.ROYAL_FLUSH: {
+	// 		if (highest_ranked_best_cards[0].value > current_hand_best_cards[0].value) result = Compare_Result.LOSE;
+	// 		else if (highest_ranked_best_cards[0].value < current_hand_best_cards[0].value) result = Compare_Result.WIN;
+	// 		else Compare_Result.TIE;
+	// 		break;
+	// 	}
+	// }
+	// }
+}
 
 function compare_hand_to_highest_ranked(highestRankedHand: Ranked_Hand, rankedHand: Ranked_Hand): Compare_Result {
 	let result: Compare_Result = Compare_Result.LOSE;
@@ -578,104 +714,113 @@ function compare_hand_to_highest_ranked(highestRankedHand: Ranked_Hand, rankedHa
 
 	if (rankedHand.rank > highestRankedHand.rank) {
 		result = Compare_Result.WIN;
+		return result;
 	}
 
-	const best_cards_1 = highestRankedHand.player.best_cards;
-	const best_cards_2 = rankedHand.player.best_cards;
-	if (best_cards_1.length != 5 || best_cards_2.length != 5) {
-		// console.log("WhAT THE FUCK");
-		// console.log(best_cards_1, highestRankedHand.rank)
-		// console.log(best_cards_2, rankedHand.rank)
-	}
-	const p1 = findPairs(highestRankedHand.hand);
-	const p2 = findPairs(rankedHand.hand);
+	const highest_ranked_best_cards = highestRankedHand.player.best_cards;
+	const current_hand_best_cards = rankedHand.player.best_cards;
+	const highest_ranked_pairs = findPairs(highestRankedHand.hand);
+	const current_hand_pairs = findPairs(rankedHand.hand);
 
 	if (rankedHand.rank == highestRankedHand.rank) { // if we found a tied rank
 		switch (rankedHand.rank) {
 			case Hand_Rank.HIGH_CARD: {
-				let done = false;
-				for (let i = 0; i < best_cards_1.length; i++) {
-					if (done) continue;
-					if (best_cards_1[i].value > best_cards_2[i].value) {
+				// let done = false;
+				for (let i = 0; i < highest_ranked_best_cards.length; i++) {
+					// if (done) continue;
+					if (highest_ranked_best_cards[i].value > current_hand_best_cards[i].value) {
 						result = Compare_Result.LOSE;
-						done = true;
-					} else if (best_cards_1[i].value < best_cards_2[i].value) {
+						return result;
+						// done = true;
+					} else if (highest_ranked_best_cards[i].value < current_hand_best_cards[i].value) {
 						result = Compare_Result.WIN;
-						done = true;
+						return result;
+						// done = true;
 					}
 				}
 				break;
 			}
 			case Hand_Rank.TWO_PAIR: {
-				if (p1[0] > p2[0]) result = Compare_Result.LOSE;
-				else if (p1[0] < p2[0]) result = Compare_Result.WIN;
+				if (highest_ranked_pairs[0] > current_hand_pairs[0]) result = Compare_Result.LOSE;
+				else if (highest_ranked_pairs[0] < current_hand_pairs[0]) result = Compare_Result.WIN;
 				else {
-					if (p1[1] > p2[1]) result = Compare_Result.LOSE;
-					else if (p2[1] < p2[1]) result = Compare_Result.WIN;
+					if (highest_ranked_pairs[1] > current_hand_pairs[1]) result = Compare_Result.LOSE;
+					else if (current_hand_pairs[1] < current_hand_pairs[1]) result = Compare_Result.WIN;
 					else {
 						// handle kicker
-						if (best_cards_1[4].value > best_cards_2[4].value) result = Compare_Result.LOSE;
-						else if (best_cards_1[4].value < best_cards_2[4].value) result = Compare_Result.WIN;
+						if (highest_ranked_best_cards[4].value > current_hand_best_cards[4].value) result = Compare_Result.LOSE;
+						else if (highest_ranked_best_cards[4].value < current_hand_best_cards[4].value) result = Compare_Result.WIN;
 						else result = Compare_Result.TIE;
 					}
 				}
 				break;
 			}
 			case Hand_Rank.THREE_OF_KIND: {
-				if (p1[0] > p2[0]) result = Compare_Result.LOSE;
-				else if (p1[0] < p2[0]) result = Compare_Result.WIN;
+				if (highest_ranked_pairs[0] > current_hand_pairs[0]) result = Compare_Result.LOSE;
+				else if (highest_ranked_pairs[0] < current_hand_pairs[0]) result = Compare_Result.WIN;
 				else {
-					if (best_cards_1[3].value > best_cards_2[3].value) result = Compare_Result.LOSE;
-					else if (best_cards_1[3].value < best_cards_2[3].value) result = Compare_Result.WIN;
+					if (highest_ranked_best_cards[3].value > current_hand_best_cards[3].value) result = Compare_Result.LOSE;
+					else if (highest_ranked_best_cards[3].value < current_hand_best_cards[3].value) result = Compare_Result.WIN;
 					else {
-						if (best_cards_1[4].value > best_cards_2[4].value) result = Compare_Result.LOSE;
-						else if (best_cards_1[4].value < best_cards_2[4].value) result = Compare_Result.WIN;
+						if (highest_ranked_best_cards[4].value > current_hand_best_cards[4].value) result = Compare_Result.LOSE;
+						else if (highest_ranked_best_cards[4].value < current_hand_best_cards[4].value) result = Compare_Result.WIN;
 						else result = Compare_Result.TIE;
 					}
 				}
 				break;
 			}
 			case Hand_Rank.STRAIGHT: {
-				if (best_cards_1[0].value > best_cards_2[0].value) result = Compare_Result.LOSE;
-				else if (best_cards_1[0].value < best_cards_2[0].value) result = Compare_Result.WIN;
+				if (highest_ranked_best_cards[0].value > current_hand_best_cards[0].value) result = Compare_Result.LOSE;
+				else if (highest_ranked_best_cards[0].value < current_hand_best_cards[0].value) result = Compare_Result.WIN;
 				else Compare_Result.TIE;
 				break;
 			}
 			case Hand_Rank.FLUSH: {
-				if (best_cards_1[0].value > best_cards_2[0].value) result = Compare_Result.LOSE;
-				else if (best_cards_1[0].value < best_cards_2[0].value) result = Compare_Result.WIN;
+				if (highest_ranked_best_cards[0].value > current_hand_best_cards[0].value) result = Compare_Result.LOSE;
+				else if (highest_ranked_best_cards[0].value < current_hand_best_cards[0].value) result = Compare_Result.WIN;
 				else Compare_Result.TIE;
 				break;
 			}
 			case Hand_Rank.FULL_HOUSE: {
-				if (p1[0] > p2[0]) result = Compare_Result.LOSE;
-				else if (p1[0] < p2[0]) result = Compare_Result.WIN;
-				else {
-					if (p1[1] > p2[1]) result = Compare_Result.LOSE;
-					else if (p2[1] < p2[1]) result = Compare_Result.WIN;
-					else result = Compare_Result.TIE;
+				if (highest_ranked_best_cards[0].value > current_hand_best_cards[0].value) {
+					return Compare_Result.LOSE;
+				} else if (highest_ranked_best_cards[0].value < current_hand_best_cards[0].value) {
+					return Compare_Result.WIN;
+				} else {
+					if (highest_ranked_best_cards[3].value > current_hand_best_cards[0].value) {
+						return Compare_Result.LOSE;
+					} else if (highest_ranked_best_cards[3].value < current_hand_best_cards[3].value) {
+						return Compare_Result.WIN;
+					} 
 				}
+				// if (highest_ranked_pairs[0] > current_hand_pairs[0]) result = Compare_Result.LOSE;
+				// else if (highest_ranked_pairs[0] < current_hand_pairs[0]) result = Compare_Result.WIN;
+				// else {
+				// 	if (highest_ranked_pairs[1] > current_hand_pairs[1]) result = Compare_Result.LOSE;
+				// 	else if (current_hand_pairs[1] < current_hand_pairs[1]) result = Compare_Result.WIN;
+				// 	else result = Compare_Result.TIE;
+				// }
 				break;
 			}
 			case Hand_Rank.FOUR_OF_KIND: {
-				if (best_cards_1[0].value > best_cards_2[0].value) result = Compare_Result.LOSE;
-				else if (best_cards_1[0].value < best_cards_2[0].value) result = Compare_Result.WIN;
+				if (highest_ranked_best_cards[0].value > current_hand_best_cards[0].value) result = Compare_Result.LOSE;
+				else if (highest_ranked_best_cards[0].value < current_hand_best_cards[0].value) result = Compare_Result.WIN;
 				else {
-					if (best_cards_1[4].value > best_cards_2[4].value) result = Compare_Result.LOSE;
-					else if (best_cards_1[4].value < best_cards_2[4].value) result = Compare_Result.WIN;
+					if (highest_ranked_best_cards[4].value > current_hand_best_cards[4].value) result = Compare_Result.LOSE;
+					else if (highest_ranked_best_cards[4].value < current_hand_best_cards[4].value) result = Compare_Result.WIN;
 					else result = Compare_Result.TIE;
 				}
 				break;
 			}
 			case Hand_Rank.STRAIGHT_FLUSH: {
-				if (best_cards_1[0].value > best_cards_2[0].value) result = Compare_Result.LOSE;
-				else if (best_cards_1[0].value < best_cards_2[0].value) result = Compare_Result.WIN;
+				if (highest_ranked_best_cards[0].value > current_hand_best_cards[0].value) result = Compare_Result.LOSE;
+				else if (highest_ranked_best_cards[0].value < current_hand_best_cards[0].value) result = Compare_Result.WIN;
 				else Compare_Result.TIE;
 				break;
 			}
 			case Hand_Rank.ROYAL_FLUSH: {
-				if (best_cards_1[0].value > best_cards_2[0].value) result = Compare_Result.LOSE;
-				else if (best_cards_1[0].value < best_cards_2[0].value) result = Compare_Result.WIN;
+				if (highest_ranked_best_cards[0].value > current_hand_best_cards[0].value) result = Compare_Result.LOSE;
+				else if (highest_ranked_best_cards[0].value < current_hand_best_cards[0].value) result = Compare_Result.WIN;
 				else Compare_Result.TIE;
 				break;
 			}
@@ -686,7 +831,7 @@ function compare_hand_to_highest_ranked(highestRankedHand: Ranked_Hand, rankedHa
 };
 
 export function find_hand_winner(_game: Game): Hand_Results {
-	let highestRankedHand: Ranked_Hand = rankHand(_game, _game.players[0]); // do this to avoid unassigned var error, FIX??
+	let highestRankedHand: Ranked_Hand = rankHand(_game.players[0], _game.community_cards); // do this to avoid unassigned var error, FIX??
 
 	const hand_result: Hand_Results = {
 		// hand_ranks: [],
@@ -697,7 +842,7 @@ export function find_hand_winner(_game: Game): Hand_Results {
 	// then compare it to the highest ranked hand in the current hand
 	// and see if it is higher and if so set them as new winning player
 	_game.players.forEach(player => {
-		let rankedHand = rankHand(_game, player);
+		let rankedHand = rankHand(player, _game.community_cards);
 		player.hand_rank = rankedHand.rank;
 		player.final_hand_cards = rankedHand.hand;
 
@@ -723,6 +868,7 @@ export function find_hand_winner(_game: Game): Hand_Results {
 		if (winnerElem) {
 			winnerElem.innerHTML = highestRankedHand.player.name + "wins the hand!";
 			// console.log(highestRankedHand);
+			_game.hand_winner.money += _game.current_hand.pot;
 		}
 	}
 
@@ -795,6 +941,7 @@ function toggle_end_of_hand_el() {
 };
 
 function blinds() {
+	console.log("doing blinds")
 	const bb_player = game.round_order[game.round_order.length - 1];
 	const sb_player = game.round_order[game.round_order.length - 2];
 	const dealer_player = game.round_order[game.round_order.length - 3];
@@ -807,6 +954,8 @@ function blinds() {
 	add_money_to_pot(bb_player, game.blinds.big);
 
 	game.current_hand.current_bet = game.blinds.big;
+
+	update_player_ui();
 }
 
 
@@ -844,6 +993,8 @@ function add_money_to_pot(player: Player, value: number) {
 	player.money -= value;
 	game.current_hand.pot += value;
 
+	
+
 	player.amount_bet_this_round += value;
 
 	el(".pot").innerHTML = `Pot: ${game.current_hand.pot}`; 
@@ -851,22 +1002,19 @@ function add_money_to_pot(player: Player, value: number) {
 
 
 function humanBet() {
-	//log("human bet");
+	const bet_elem = el(".bet_amount");
+	
+	let bet_amount = parseInt(bet_elem.innerHTML);
 
-	// get the amount that was entered for the bet
-	let betAmountElem = document.querySelector(".bet_amount");
-	if (betAmountElem) {
-		let betAmount = parseInt(betAmountElem.innerHTML);
+	bet_amount -= game.current_hand.current_bet;
 
 	// only accept the click if the betAmount is > 0 >= roundbetAmount
-	if (betAmount > 0 && betAmount >= game.current_hand.current_bet) {
-		betPlaced(betAmount);
+	if (bet_amount > 0 ) {
+		place_bet(game.human_player, bet_amount);
 		end_turn(game.human_player, true);
 	} else {
 		//log('player tried to bet zero, or less than the roundBetAmount')
 	}
-	}
-
 };
 
 function fold(player: Player) {
@@ -874,75 +1022,6 @@ function fold(player: Player) {
 	// game.players.splice(player.id);
 	end_turn(player, false);
 };
-
-// function bet_amount_keypress_handler(e: KeyboardEvent) {
-// 	// console.log(e);
-
-// 	const target: Element = e.target as Element;
-// 	console.log("target text: " + target.textContent);
-
-// 	if (parseInt(e.key)) { // is number
-
-// 		// const current_player_bet: string = (e.target as HTMLInputElement).textContent; // get value of current bet, if empty string set to zero instead of NaN from parseInt()	
-// 		// const new_player_bet = current_player_bet + parseInt(e.key);
-
-// 		// console.log(`current_player_bet: ${current_player_bet}`);
-// 		// console.log(`new_player_bet: ${new_player_bet}`);
-
-// 		// if (new_player_bet < game.human_player.money) {
-// 		// 	console.log(`bet: ${new_player_bet}`);
-// 		// 	console.log(`money: ${game.human_player.money}`);
-// 		// 	(e.target as HTMLInputElement).textContent = new_player_bet.toString();
-// 		// 	// e.preventDefault();
-// 		// }
-// 	} else {
-// 		// e.preventDefault();
-// 	}
-
-// 	// e.preventDefault();
-
-//         //  if (charCode > 31 && (charCode < 48 || charCode > 57))
-//         //     return false;
- 
-//         //  return true;
-
-// 	// if (e.key >= 48 && e.key <= 57) {
-
-// 	// }
-	
-// 	// // make sure the most recent input is a number and is <= current players money
-// 	// if (e.keyCode >= 48 && e.keyCode <= 57) {
-// 	// 	// if entered a number
-
-// 	// 	// get temp bet amount
-// 	// 	let newInput: string = e.key;
-// 	// 	if (e.target instanceof Element) {
-// 	// 		let oldBetAmount: number = parseInt(e.target.innerHTML);
-// 	// 		let tempBetAmount: number = oldBetAmount + parseInt(newInput);
-
-// 	// 		let validBet: boolean = checkValidBet(tempBetAmount);
-
-// 	// 		// if not a valid bet, adjust it to min or max
-// 	// 		if (!validBet) {
-// 	// 			//log('not a valid bet');
-
-// 	// 			if (tempBetAmount < game.current_hand.current_bet) {
-// 	// 				setBetAmountToMin();
-// 	// 				e.preventDefault(); // prevent newest input if less than minBet
-// 	// 			} else {
-// 	// 				// set to player max bet
-// 	// 				let maxBet = game.players[0].money;
-// 	// 				//log(maxBet)
-// 	// 				e.target.innerHTML = maxBet.toString();
-// 	// 				e.preventDefault(); // prevent newest input if more than player money
-// 	// 			}
-// 	// 		}
-// 	// 	}
-// 	// } else {
-// 	// 	e.preventDefault(); // prevent entering on newest input if not a number
-// 	// }
-
-// };
 
 function checkValidBet(tempBetAmount: number) {
 	// make sure the human player has entered a valid bet that is <= their money && >= minBet
@@ -961,54 +1040,40 @@ function setToMaxBet() {
 	let maxBet = game.players[0].money;
 };
 
-function betPlaced(betAmount: number) {
-	//log("bet placed for " + betAmount);
-	// a new valid (is this checked???) bet has been placed
-	// update the roundBetAmount and restart the round order starting at the bet makers index + 1
-
-	game.current_hand.current_bet = betAmount;
-
-	//log("new roundBetAmount: " + roundBetAmount);
-
-	// find the next player and start a new round of betting w/ them
-	//let nextPlayer = findNextPlayer(activePlayer);
-
-	// get their index and set it to the startingPlayerIndex
-	// this is used for the next round to determine where the betting should start
-	// we want betting to start on the last player to bet
-
-	//let nextPlayerIndex = getPlayerRoundIndex(nextPlayer);
-	//startingPlayerIndex = nextPlayerIndex;
-	//activePlayer = nextPlayer;
-
-	// create the new round order
-	//createRoundOrder(startingPlayerIndex);  
-	//startNextPlayerTurn(activePlayer);
-
-};
-
 function setNewRoundOrderAfterBet(player: Player) {
-	//restart the round order starting at the bet makers index + 1
-	//find the next player and start a new round of betting w/ them
+	// //restart the round order starting at the bet makers index + 1
+	// //find the next player and start a new round of betting w/ them
 
-	let nextPlayer = findNextPlayer();
-	// console.log("next_player: " + nextPlayer.id)
-	// get their index and set it to the startingPlayerIndex
-	// this is used for the next round to determine where the betting should start
-	// we want betting to start on the last player to bet
+	// let nextPlayer = findNextPlayer();
+	// // console.log("next_player: " + nextPlayer.id)
+	// // get their index and set it to the startingPlayerIndex
+	// // this is used for the next round to determine where the betting should start
+	// // we want betting to start on the last player to bet
 
-	let nextPlayerIndex = getPlayerRoundIndex(nextPlayer);
-	// game.round_start_player_index = nextPlayerIndex;
-	// game.active_player = nextPlayer;
+	// let nextPlayerIndex = getPlayerRoundIndex(nextPlayer);
+	// // game.round_start_player_index = nextPlayerIndex;
+	// // game.active_player = nextPlayer;
 
-	// create the new round order
-	// createRoundOrder(nextPlayerIndex);
-	// game.active_player = game.round_order[0];
+	// // create the new round order
+	// // createRoundOrder(nextPlayerIndex);
+	// // game.active_player = game.round_order[0];
 
-	// since the current player has already bet we need to remove them from the end of the round
-	game.round_order = game.round_order.slice(0, game.round_order.length - 1);
+	// // since the current player has already bet we need to remove them from the end of the round
+	// game.round_order = game.round_order.slice(0, game.round_order.length - 1);
 
-	start_turn(game.active_player);
+	// start_turn(nextPlayer);
+
+	// console.log(`round current player index: ${game.round_current_player_index}`)
+	// debugger;
+	let first_player_id = player.id;
+	// console.log(`first_player_id: ${first_player}`);
+
+	let start = game.players.slice(first_player_id);
+	let end = game.players.slice(0, first_player_id);
+	game.round_order = start.concat(end);
+
+	game.round_current_player_index = 0;
+	game.active_player = game.round_order[game.round_current_player_index];
 };
 
 function getPlayerRoundIndex(player: Player): number {
@@ -1021,9 +1086,9 @@ function getPlayerRoundIndex(player: Player): number {
 	return index;
 };
 
-export function rankHand(_game: Game, player: Player): Ranked_Hand  {
+export function rankHand(player: Player, community_cards: Card[]): Ranked_Hand  {
 	let hand: Card[] = player.hand;
-	hand = hand.concat(_game.community_cards);
+	hand = hand.concat(community_cards);
 
 	let highestValueInHand: number = 0;
 	let handRank: Hand_Rank = Hand_Rank.HIGH_CARD;
@@ -1253,7 +1318,7 @@ function removeDuplicateValues(hand: Card[]): Card[] {
 		else {
 			let is_dupe = false;
 			for (let other_card of hand) {
-				if (card.value == other_card.value) is_dupe = true;
+				if (card.value == other_card.value && card.id != other_card.id) is_dupe = true;
 			}
 
 			if (!is_dupe) new_hand.push(card);

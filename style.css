@@ -167,23 +167,20 @@ html, body {
 
 .bet_options {
   position: absolute;
-  top: calc(100% - 40px);
+  width: 300px;
+  top: calc(100% - 120px);
   left: calc(50% - 150px);
   display: flex;
-  justify-content: center;
-  width: 300px;
-  /* position: absolute;
-  background: #111111;
-  width: 40%;
-  height: 50px;
-  left: calc(50% - 20%);
-  margin-top: 0px;
+  flex-direction: column;
+}
+
+.bet_options_top {
   display: flex;
-  justify-content: space-around;
-  align-items: center;
-  opacity: .99;
-  z-index: -1;
-  display: none; */
+  padding-bottom: 10px;;
+}
+
+.bet_options_bottom {
+  display: flex;
 }
 
 .bet_options_hide {
@@ -199,14 +196,15 @@ html, body {
 .bet_button {
   background: #222222;
   height: 30px;
-  width: 25%;
+  width: 40px;
   user-select: none;
   cursor: pointer;
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-left: 5px;
-  margin-right: 5px;
+  margin-left: 8px;
+  margin-right: 8px;
+  padding: 8px;
 }
 
 .bet_button:hover {
@@ -226,7 +224,7 @@ html, body {
 .bet_amount {
   background: #222222;
   height: 30px;
-  width: 20%;
+  width: 50px;
   user-select: none;
   cursor: pointer;
   display: inline-block; /* need to do this to prevent cursor position issue */
@@ -235,6 +233,10 @@ html, body {
   border:none;
   line-height: 30px;
   text-align: center;
+  padding: 8px;
+  margin-left: 8px;
+  margin-right: 8px;
+  font-size: 20px;
 }
 
 /* community cards */
@@ -261,9 +263,12 @@ html, body {
 .pot {
   position: absolute;
   top: calc(30% + 250px);
-  left: 50%;
+  left: calc(50% - 30px);
+  width: 60;
   background: red;
   z-index: 2;
+  display: flex;
+  justify-content: center;
 }
 
 .end_of_hand {
