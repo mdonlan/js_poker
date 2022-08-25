@@ -10,6 +10,8 @@
         "watch": false,
         "jsx": "preserve",
         "skipDefaultLibCheck": true,
+        "sourceMap": true
         // "strict": true
-    }
+    },
+    "files": ["global.d.ts"]
 }

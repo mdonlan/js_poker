@@ -592,8 +592,8 @@ export enum Compare_Result {
 // WIN = hand_one won
 // LOSE = hand_two won
 export function compare_hands(ranked_hand_one: Ranked_Hand, ranked_hand_two: Ranked_Hand): Compare_Result {
-	find_five_used_cards(ranked_hand_one.player);
-	find_five_used_cards(ranked_hand_two.player);
+	find_five_best_cards(ranked_hand_one.player);
+	find_five_best_cards(ranked_hand_two.player);
 
 	const hand_one_cards = ranked_hand_one.hand;
 	const hand_two_cards = ranked_hand_two.hand;
@@ -601,16 +601,13 @@ export function compare_hands(ranked_hand_one: Ranked_Hand, ranked_hand_two: Ran
 	if (ranked_hand_one.rank > ranked_hand_two.rank) return Compare_Result.WIN;
 	if (ranked_hand_one.rank < ranked_hand_two.rank) return Compare_Result.LOSE;
 
-	const hand_one_pairs: number[] = findPairs(ranked_hand_one.hand); 
-	const hand_two_pairs: number[] = findPairs(ranked_hand_two.hand);
+	const hand_one_pairs: number[] = get_pairs_exact(ranked_hand_one.hand); 
+	const hand_two_pairs: number[] = get_pairs_exact(ranked_hand_two.hand);
 	
 
 	switch (ranked_hand_one.rank) {
-		default: {
-			return Compare_Result.LOSE;
-		}
 		case Hand_Rank.HIGH_CARD: {
-			
+
 			for (let i = 0; i < 1; i++) {
 				if (hand_one_cards[i].value > hand_two_cards[i].value) return Compare_Result.WIN; 
 				if (hand_one_cards[i].value < hand_two_cards[i].value) return Compare_Result.LOSE;
@@ -618,17 +615,47 @@ export function compare_hands(ranked_hand_one: Ranked_Hand, ranked_hand_two: Ran
 			
 			return Compare_Result.TIE;
 		}
-		case Hand_Rank.TWO_PAIR: {
+		case Hand_Rank.PAIR: {
 			if (hand_one_pairs[0] > hand_two_pairs[0]) return Compare_Result.WIN;
 			if (hand_one_pairs[0] < hand_two_pairs[0]) return Compare_Result.LOSE;
-			if (hand_one_pairs[1] > hand_two_pairs[1]) return Compare_Result.WIN;
-			if (hand_one_pairs[1] < hand_two_pairs[1]) return Compare_Result.LOSE;
 
 			if (hand_one_cards[4].value > hand_two_cards[4].value) return Compare_Result.WIN;
 			if (hand_one_cards[4].value < hand_two_cards[4].value) return Compare_Result.LOSE;
 
 			return Compare_Result.TIE;
 		}
+		case Hand_Rank.TWO_PAIR: {
+			console.log(hand_one_cards, hand_two_cards)
+			console.log(hand_one_pairs, hand_two_pairs)
+			if (hand_one_pairs[0] > hand_two_pairs[0]) return Compare_Result.WIN;
+			if (hand_one_pairs[0] < hand_two_pairs[0]) return Compare_Result.LOSE;
+			if (hand_one_pairs[1] > hand_two_pairs[1]) return Compare_Result.WIN;
+			if (hand_one_pairs[1] < hand_two_pairs[1]) return Compare_Result.LOSE;
+
+			// this doesn't work??
+			if (hand_one_cards[4].value > hand_two_cards[4].value) return Compare_Result.WIN;
+			if (hand_one_cards[4].value < hand_two_cards[4].value) return Compare_Result.LOSE;
+
+			return Compare_Result.TIE;
+		}
+		case Hand_Rank.FULL_HOUSE: {
+			const hand_one_trips = get_trips(hand_one_cards);
+			const hand_two_trips = get_trips(hand_two_cards);
+			// console.log("hand one trips: ", hand_one_trips);
+			// console.log("hand two trips: ", hand_two_trips);
+
+			// console.log(hand_one_pairs, hand_two_pairs)
+
+			if (hand_one_trips[0] > hand_two_trips[0]) return Compare_Result.WIN;
+			if (hand_one_trips[0] < hand_two_trips[0]) return Compare_Result.LOSE;
+			else {
+				if (hand_one_pairs[0] > hand_two_pairs[0]) return Compare_Result.WIN;
+				if (hand_one_pairs[0] < hand_two_pairs[0]) return Compare_Result.LOSE;
+			}
+
+			return Compare_Result.TIE;
+		}
+
 	}
 
 	return Compare_Result.TIE;
@@ -706,11 +733,35 @@ export function compare_hands(ranked_hand_one: Ranked_Hand, ranked_hand_two: Ran
 	// }
 }
 
+function get_trips(hand: Card[]): number[] {
+	const trips: number[] = [];
+	hand.forEach((card: Card) => {
+		const count = hand.filter((other_card: Card) => other_card.value === card.value).length;
+		if (count == 3) {
+			const already_found = trips.filter(value => value === card.value).length == 0 ? false : true;
+			if (!already_found) trips.push(card.value);
+		}
+	})
+	return trips;
+}
+
+function get_pairs_exact(hand: Card[]): number[] {
+	const pairs: number[] = [];
+	hand.forEach((card: Card) => {
+		const count = hand.filter(other_card => other_card.value === card.value).length;
+		if (count == 2) {
+			const already_found = pairs.filter(value => value === card.value).length == 0 ? false : true;
+			if (!already_found) pairs.push(card.value);
+		}
+	})
+	return pairs;
+}
+
 function compare_hand_to_highest_ranked(highestRankedHand: Ranked_Hand, rankedHand: Ranked_Hand): Compare_Result {
 	let result: Compare_Result = Compare_Result.LOSE;
 	
-	find_five_used_cards(highestRankedHand.player)
-	find_five_used_cards(rankedHand.player);
+	find_five_best_cards(highestRankedHand.player)
+	find_five_best_cards(rankedHand.player);
 
 	if (rankedHand.rank > highestRankedHand.rank) {
 		result = Compare_Result.WIN;
@@ -1508,83 +1559,105 @@ function get_royal_flush_cards(hand: Card[]): Card[] | false {
 	return false;
 }
 
-// keep this seperate from handRank func
-function find_five_used_cards(player: Player) {
-	let final_cards = player.final_hand_cards;
-	player.best_cards = [];
+// find the best five cards for each hand rank
+// each hand can start w/ five to seven cards
+// sort the cards by if their being used
+export function find_five_best_cards(ranked_hand: Ranked_Hand): Card[] {
+	console.assert(ranked_hand.hand.length >= 5, "Hand size is less than 5");
+	// console.log("starting find_five_used_cards");
+	// console.log("hand: ", player.hand);
+	// console.log("final_cards: ", player.final_hand_cards);
+	
+	// let final_cards = player.final_hand_cards;
 
-	switch(player.hand_rank) {
+	/* if we are testing the final cards array is empty, fix??
+		so just set it to their hand
+	 */
+	// if (final_cards.length == 0) {
+	// 	final_cards = player.hand;
+	// }
+
+	// console.assert(final_cards.length > 0, "Final Cards arr is empty");
+
+	// player.best_cards = [];
+	const hand = ranked_hand.hand;
+	let best_cards: Card[] = [];
+
+	switch(ranked_hand.rank) {
 		case Hand_Rank.HIGH_CARD: {
-			player.best_cards = final_cards.slice(0, 5);
+			best_cards = hand.slice(0, 5);
 			break;
 		}
 		case Hand_Rank.PAIR: {
-			const pairs = findPairs(final_cards);
-			const cards_with_value = get_cards_with_value(final_cards, pairs[0]);
-			player.best_cards.push(...cards_with_value);
+			const pairs = findPairs(hand);
+			const cards_with_value = get_cards_with_value(hand, pairs[0]);
+			best_cards.push(...cards_with_value);
 
 			// get remaining 3 best cards in hand
-			const hightest_non_matching = get_highest_non_matching_cards(final_cards, [pairs[0]]);
-			player.best_cards.push(...hightest_non_matching.slice(0, 3));
+			const hightest_non_matching = get_highest_non_matching_cards(hand, [pairs[0]]);
+			best_cards.push(...hightest_non_matching.slice(0, 3));
 
 			break;
 		}
 		case Hand_Rank.TWO_PAIR: {
-			const pairs = findPairs(final_cards);
-			const first_pair_cards: Card[] = get_cards_with_value(final_cards, pairs[0]);
-			player.best_cards.push(...first_pair_cards);
-			const second_pair_cards: Card[] = get_cards_with_value(final_cards, pairs[1]);
-			player.best_cards.push(...second_pair_cards);
+			const pairs = findPairs(hand);
+			const first_pair_cards: Card[] = get_cards_with_value(hand, pairs[0]);
+			best_cards.push(...first_pair_cards);
+			const second_pair_cards: Card[] = get_cards_with_value(hand, pairs[1]);
+			best_cards.push(...second_pair_cards);
 
 			// add last card
-			const hightest_non_matching = get_highest_non_matching_cards(final_cards, [pairs[0], pairs[1]]);
-			player.best_cards.push(...hightest_non_matching.slice(0, 1));
+			const hightest_non_matching = get_highest_non_matching_cards(hand, [pairs[0], pairs[1]]);
+			best_cards.push(...hightest_non_matching.slice(0, 1));
 
 			break;
 		}
 		case Hand_Rank.THREE_OF_KIND: {
-			const three_of_kind_cards: Card[] | false = get_three_of_kind_cards(final_cards);
+			const three_of_kind_cards: Card[] | false = get_three_of_kind_cards(hand);
 			if (three_of_kind_cards) {
-				player.best_cards.push(...three_of_kind_cards);
-				const hightest_non_matching = get_highest_non_matching_cards(final_cards, [three_of_kind_cards[0].value]);
-				player.best_cards.push(...hightest_non_matching.slice(0, 2));
+				best_cards.push(...three_of_kind_cards);
+				const hightest_non_matching = get_highest_non_matching_cards(hand, [three_of_kind_cards[0].value]);
+				best_cards.push(...hightest_non_matching.slice(0, 2));
 			}
 
 			break;
 		}
 		case Hand_Rank.STRAIGHT: {
-			const straight_cards: Card[] | false = get_straight_cards(final_cards);
-			if (straight_cards) player.best_cards.push(...straight_cards);
+			const straight_cards: Card[] | false = get_straight_cards(hand);
+			if (straight_cards) best_cards.push(...straight_cards);
 			break;
 		}
 		case Hand_Rank.FLUSH: {
-			const flush_cards: Card[] | false = get_flush_cards(final_cards);
-			if (flush_cards) player.best_cards.push(...flush_cards);
+			const flush_cards: Card[] | false = get_flush_cards(hand);
+			if (flush_cards) best_cards.push(...flush_cards);
 			break;
 		}
 		case Hand_Rank.FULL_HOUSE: {
-			const full_house_cards: Card[] | false = get_full_house_cards(final_cards);
-			if (full_house_cards) player.best_cards.push(...full_house_cards);
+			const full_house_cards: Card[] | false = get_full_house_cards(hand);
+			if (full_house_cards) best_cards.push(...full_house_cards);
 			break;
 		}
 		case Hand_Rank.FOUR_OF_KIND: {
-			const four_of_kind_cards: Card[] | false = get_four_of_kind_cards(final_cards);
-			if (four_of_kind_cards) player.best_cards.push(...four_of_kind_cards);
-			const hightest_non_matching = get_highest_non_matching_cards(final_cards, [four_of_kind_cards[0].value]);
-			player.best_cards.push(...hightest_non_matching.slice(0, 1));
+			const four_of_kind_cards: Card[] | false = get_four_of_kind_cards(hand);
+			if (four_of_kind_cards) best_cards.push(...four_of_kind_cards);
+			const hightest_non_matching = get_highest_non_matching_cards(hand, [four_of_kind_cards[0].value]);
+			best_cards.push(...hightest_non_matching.slice(0, 1));
 			break;
 		}
 		case Hand_Rank.STRAIGHT_FLUSH: {
-			const straight_flush_cards: Card[] | false = get_straight_flush_cards(final_cards);
-			if (straight_flush_cards) player.best_cards.push(...straight_flush_cards);
+			const straight_flush_cards: Card[] | false = get_straight_flush_cards(hand);
+			if (straight_flush_cards) best_cards.push(...straight_flush_cards);
 			break;
 		}
 		case Hand_Rank.ROYAL_FLUSH: {
-			const royal_flush_cards: Card[] | false = get_royal_flush_cards(final_cards);
-			if (royal_flush_cards) player.best_cards.push(...royal_flush_cards);			
+			const royal_flush_cards: Card[] | false = get_royal_flush_cards(hand);
+			if (royal_flush_cards) best_cards.push(...royal_flush_cards);			
 			break;
 		}
 	}
+
+	console.log("best_cards: ", best_cards)
+	return best_cards;
 }
 
 function areWeTestingWithJest() {
