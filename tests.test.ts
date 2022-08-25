@@ -316,6 +316,7 @@ describe("Find Best Cards", () => {
         ]);
 
         const ranked_hand = rankHand(player_one, []);
+        expect(ranked_hand.rank).toBe(Hand_Rank.HIGH_CARD);
 
         const best_cards = find_five_best_cards(ranked_hand);
 
@@ -338,9 +339,9 @@ describe("Find Best Cards", () => {
         ]);
 
         const ranked_hand = rankHand(player_one, []);
+        expect(ranked_hand.rank).toBe(Hand_Rank.PAIR);
 
         const best_cards = find_five_best_cards(ranked_hand);
-        console.log("best_cards: ", best_cards)
 
         expect(best_cards[0].value).toBe(Card_Type.TWO);
         expect(best_cards[1].value).toBe(Card_Type.TWO);
@@ -361,19 +362,199 @@ describe("Find Best Cards", () => {
         ]);
 
         const ranked_hand = rankHand(player_one, []);
+        expect(ranked_hand.rank).toBe(Hand_Rank.TWO_PAIR);
 
         const best_cards = find_five_best_cards(ranked_hand);
-        console.log("best_cards: ", best_cards)
 
         expect(best_cards[0].value).toBeOneOf([Card_Type.TWO, Card_Type.FIVE]);
         expect(best_cards[1].value).toBeOneOf([Card_Type.TWO, Card_Type.FIVE]);
         expect(best_cards[2].value).toBeOneOf([Card_Type.TWO, Card_Type.FIVE]);
         expect(best_cards[3].value).toBeOneOf([Card_Type.TWO, Card_Type.FIVE]);
         expect(best_cards[4].value).toBe(Card_Type.ACE);
-        // expect(best_cards[1].value).toBe(Card_Type.TWO);
-        // expect(best_cards[2].value).toBe(Card_Type.FIVE);
-        // expect(best_cards[3].value).toBe(Card_Type.FIVE);
-        // expect(best_cards[4].value).toBe(Card_Type.ACE);
+    })
+
+    test("Three of Kind", () => {
+        player_one.hand = dev_deal_cards(deck, [
+            {suit: Suit.HEARTS, type: Card_Type.NINE},
+            {suit: Suit.SPADES, type: Card_Type.ACE},
+            {suit: Suit.CLUBS, type: Card_Type.TWO},
+            {suit: Suit.HEARTS, type: Card_Type.TWO},
+            {suit: Suit.SPADES, type: Card_Type.TWO},
+            {suit: Suit.DIAMONDS, type: Card_Type.FIVE},
+            {suit: Suit.DIAMONDS, type: Card_Type.QUEEN}
+        ]);
+
+        const ranked_hand = rankHand(player_one, []);
+        expect(ranked_hand.rank).toBe(Hand_Rank.THREE_OF_KIND);
+
+        const best_cards = find_five_best_cards(ranked_hand);
+
+        expect(best_cards[0].value).toBe(Card_Type.TWO);
+        expect(best_cards[1].value).toBe(Card_Type.TWO);
+        expect(best_cards[2].value).toBe(Card_Type.TWO);
+        expect(best_cards[3].value).toBe(Card_Type.ACE);
+        expect(best_cards[4].value).toBe(Card_Type.QUEEN);
+    })
+
+    test("Straight", () => {
+        player_one.hand = dev_deal_cards(deck, [
+            {suit: Suit.HEARTS, type: Card_Type.NINE},
+            {suit: Suit.SPADES, type: Card_Type.EIGHT},
+            {suit: Suit.CLUBS, type: Card_Type.SEVEN},
+            {suit: Suit.HEARTS, type: Card_Type.SIX},
+            {suit: Suit.SPADES, type: Card_Type.TWO},
+            {suit: Suit.DIAMONDS, type: Card_Type.FIVE},
+            {suit: Suit.DIAMONDS, type: Card_Type.QUEEN}
+        ]);
+
+        const ranked_hand = rankHand(player_one, []);
+        expect(ranked_hand.rank).toBe(Hand_Rank.STRAIGHT);
+        
+        const best_cards = find_five_best_cards(ranked_hand);
+
+        expect(best_cards[0].value).toBe(Card_Type.NINE);
+        expect(best_cards[1].value).toBe(Card_Type.EIGHT);
+        expect(best_cards[2].value).toBe(Card_Type.SEVEN);
+        expect(best_cards[3].value).toBe(Card_Type.SIX);
+        expect(best_cards[4].value).toBe(Card_Type.FIVE);
+    })
+
+    test("Flush", () => {
+        player_one.hand = dev_deal_cards(deck, [
+            {suit: Suit.HEARTS, type: Card_Type.NINE},
+            {suit: Suit.HEARTS, type: Card_Type.KING},
+            {suit: Suit.CLUBS, type: Card_Type.SEVEN},
+            {suit: Suit.HEARTS, type: Card_Type.SIX},
+            {suit: Suit.HEARTS, type: Card_Type.TWO},
+            {suit: Suit.HEARTS, type: Card_Type.FIVE},
+            {suit: Suit.DIAMONDS, type: Card_Type.QUEEN}
+        ]);
+
+        const ranked_hand = rankHand(player_one, []);
+        expect(ranked_hand.rank).toBe(Hand_Rank.FLUSH);
+        
+        const best_cards = find_five_best_cards(ranked_hand);
+
+        expect(best_cards[0].value).toBe(Card_Type.KING);
+        expect(best_cards[1].value).toBe(Card_Type.NINE);
+        expect(best_cards[2].value).toBe(Card_Type.SIX);
+        expect(best_cards[3].value).toBe(Card_Type.FIVE);
+        expect(best_cards[4].value).toBe(Card_Type.TWO);
+    })
+
+    test("Full House", () => {
+        player_one.hand = dev_deal_cards(deck, [
+            {suit: Suit.HEARTS, type: Card_Type.NINE},
+            {suit: Suit.HEARTS, type: Card_Type.KING},
+            {suit: Suit.CLUBS, type: Card_Type.NINE},
+            {suit: Suit.CLUBS, type: Card_Type.FIVE},
+            {suit: Suit.HEARTS, type: Card_Type.TWO},
+            {suit: Suit.HEARTS, type: Card_Type.FIVE},
+            {suit: Suit.DIAMONDS, type: Card_Type.NINE}
+        ]);
+
+        const ranked_hand = rankHand(player_one, []);
+        expect(ranked_hand.rank).toBe(Hand_Rank.FULL_HOUSE);
+        
+        const best_cards = find_five_best_cards(ranked_hand);
+
+        expect(best_cards[0].value).toBe(Card_Type.NINE);
+        expect(best_cards[1].value).toBe(Card_Type.NINE);
+        expect(best_cards[2].value).toBe(Card_Type.NINE);
+        expect(best_cards[3].value).toBe(Card_Type.FIVE);
+        expect(best_cards[4].value).toBe(Card_Type.FIVE);
+    })
+
+    test("Full House", () => {
+        player_one.hand = dev_deal_cards(deck, [
+            {suit: Suit.HEARTS, type: Card_Type.NINE},
+            {suit: Suit.HEARTS, type: Card_Type.KING},
+            {suit: Suit.CLUBS, type: Card_Type.NINE},
+            {suit: Suit.CLUBS, type: Card_Type.FIVE},
+            {suit: Suit.HEARTS, type: Card_Type.TWO},
+            {suit: Suit.HEARTS, type: Card_Type.FIVE},
+            {suit: Suit.DIAMONDS, type: Card_Type.NINE}
+        ]);
+
+        const ranked_hand = rankHand(player_one, []);
+        expect(ranked_hand.rank).toBe(Hand_Rank.FULL_HOUSE);
+        
+        const best_cards = find_five_best_cards(ranked_hand);
+
+        expect(best_cards[0].value).toBe(Card_Type.NINE);
+        expect(best_cards[1].value).toBe(Card_Type.NINE);
+        expect(best_cards[2].value).toBe(Card_Type.NINE);
+        expect(best_cards[3].value).toBe(Card_Type.FIVE);
+        expect(best_cards[4].value).toBe(Card_Type.FIVE);
+    })
+
+    test("Four of Kind", () => {
+        player_one.hand = dev_deal_cards(deck, [
+            {suit: Suit.HEARTS, type: Card_Type.NINE},
+            {suit: Suit.HEARTS, type: Card_Type.KING},
+            {suit: Suit.CLUBS, type: Card_Type.NINE},
+            {suit: Suit.CLUBS, type: Card_Type.FIVE},
+            {suit: Suit.HEARTS, type: Card_Type.TWO},
+            {suit: Suit.SPADES, type: Card_Type.NINE},
+            {suit: Suit.DIAMONDS, type: Card_Type.NINE}
+        ]);
+
+        const ranked_hand = rankHand(player_one, []);
+        expect(ranked_hand.rank).toBe(Hand_Rank.FOUR_OF_KIND);
+        
+        const best_cards = find_five_best_cards(ranked_hand);
+
+        expect(best_cards[0].value).toBe(Card_Type.NINE);
+        expect(best_cards[1].value).toBe(Card_Type.NINE);
+        expect(best_cards[2].value).toBe(Card_Type.NINE);
+        expect(best_cards[3].value).toBe(Card_Type.NINE);
+        expect(best_cards[4].value).toBe(Card_Type.KING);
+    })
+
+    test("Straight Flush", () => {
+        player_one.hand = dev_deal_cards(deck, [
+            {suit: Suit.HEARTS, type: Card_Type.NINE},
+            {suit: Suit.HEARTS, type: Card_Type.EIGHT},
+            {suit: Suit.CLUBS, type: Card_Type.NINE},
+            {suit: Suit.HEARTS, type: Card_Type.FIVE},
+            {suit: Suit.HEARTS, type: Card_Type.TWO},
+            {suit: Suit.HEARTS, type: Card_Type.SEVEN},
+            {suit: Suit.HEARTS, type: Card_Type.SIX}
+        ]);
+
+        const ranked_hand = rankHand(player_one, []);
+        expect(ranked_hand.rank).toBe(Hand_Rank.STRAIGHT_FLUSH);
+        
+        const best_cards = find_five_best_cards(ranked_hand);
+
+        expect(best_cards[0].value).toBe(Card_Type.NINE);
+        expect(best_cards[1].value).toBe(Card_Type.EIGHT);
+        expect(best_cards[2].value).toBe(Card_Type.SEVEN);
+        expect(best_cards[3].value).toBe(Card_Type.SIX);
+        expect(best_cards[4].value).toBe(Card_Type.FIVE);
+    })
+
+    test("Royal Flush", () => {
+        player_one.hand = dev_deal_cards(deck, [
+            {suit: Suit.HEARTS, type: Card_Type.ACE},
+            {suit: Suit.HEARTS, type: Card_Type.JACK},
+            {suit: Suit.HEARTS, type: Card_Type.QUEEN},
+            {suit: Suit.HEARTS, type: Card_Type.KING},
+            {suit: Suit.HEARTS, type: Card_Type.TWO},
+            {suit: Suit.HEARTS, type: Card_Type.SEVEN},
+            {suit: Suit.HEARTS, type: Card_Type.TEN}
+        ]);
+
+        const ranked_hand = rankHand(player_one, []);
+        expect(ranked_hand.rank).toBe(Hand_Rank.ROYAL_FLUSH);
+        
+        const best_cards = find_five_best_cards(ranked_hand);
+
+        expect(best_cards[0].value).toBe(Card_Type.ACE);
+        expect(best_cards[1].value).toBe(Card_Type.KING);
+        expect(best_cards[2].value).toBe(Card_Type.QUEEN);
+        expect(best_cards[3].value).toBe(Card_Type.JACK);
+        expect(best_cards[4].value).toBe(Card_Type.TEN);
     })
 })
 
