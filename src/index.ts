@@ -6,6 +6,7 @@
 import { Suit, Card, Player, Game, Player_Type, Ranked_Hand, Hand_Rank, game, Card_Type, Hand_Phase, Hand_Results } from "./Game"
 import { Sim_Hand } from "./Sim_Hand";
 import { log, add_log_msg } from './Log';
+import { el, child_el} from './UI';
 
 interface Card_Info {
 	suit: Suit;
@@ -20,14 +21,7 @@ interface Cards_By_Suit {
 }
 
 
-// DOM utils
-function el(query: string) {
-	return document.querySelector(query);
-}
 
-function child_el(target: Element, query: string) {
-	return target.querySelector(query);
-}
 
 
 export function create_deck(): Card[] {
@@ -592,8 +586,8 @@ export enum Compare_Result {
 // WIN = hand_one won
 // LOSE = hand_two won
 export function compare_hands(ranked_hand_one: Ranked_Hand, ranked_hand_two: Ranked_Hand): Compare_Result {
-	find_five_best_cards(ranked_hand_one.player);
-	find_five_best_cards(ranked_hand_two.player);
+	find_five_best_cards(ranked_hand_one);
+	find_five_best_cards(ranked_hand_two);
 
 	const hand_one_cards = ranked_hand_one.hand;
 	const hand_two_cards = ranked_hand_two.hand;
@@ -603,7 +597,10 @@ export function compare_hands(ranked_hand_one: Ranked_Hand, ranked_hand_two: Ran
 
 	const hand_one_pairs: number[] = get_pairs_exact(ranked_hand_one.hand); 
 	const hand_two_pairs: number[] = get_pairs_exact(ranked_hand_two.hand);
-	
+
+	const hand_one_trips: number[] = get_trips(hand_one_cards);
+	const hand_two_trips: number[] = get_trips(hand_two_cards);
+
 
 	switch (ranked_hand_one.rank) {
 		case Hand_Rank.HIGH_CARD: {
@@ -625,8 +622,8 @@ export function compare_hands(ranked_hand_one: Ranked_Hand, ranked_hand_two: Ran
 			return Compare_Result.TIE;
 		}
 		case Hand_Rank.TWO_PAIR: {
-			console.log(hand_one_cards, hand_two_cards)
-			console.log(hand_one_pairs, hand_two_pairs)
+			// console.log(hand_one_cards, hand_two_cards)
+			// console.log(hand_one_pairs, hand_two_pairs)
 			if (hand_one_pairs[0] > hand_two_pairs[0]) return Compare_Result.WIN;
 			if (hand_one_pairs[0] < hand_two_pairs[0]) return Compare_Result.LOSE;
 			if (hand_one_pairs[1] > hand_two_pairs[1]) return Compare_Result.WIN;
@@ -638,14 +635,31 @@ export function compare_hands(ranked_hand_one: Ranked_Hand, ranked_hand_two: Ran
 
 			return Compare_Result.TIE;
 		}
-		case Hand_Rank.FULL_HOUSE: {
-			const hand_one_trips = get_trips(hand_one_cards);
-			const hand_two_trips = get_trips(hand_two_cards);
-			// console.log("hand one trips: ", hand_one_trips);
-			// console.log("hand two trips: ", hand_two_trips);
-
+		case Hand_Rank.THREE_OF_KIND: {
+			// console.log(hand_one_cards, hand_two_cards)
 			// console.log(hand_one_pairs, hand_two_pairs)
+			if (hand_one_trips[0] > hand_two_trips[0]) return Compare_Result.WIN;
+			if (hand_one_trips[0] < hand_two_trips[0]) return Compare_Result.LOSE;
 
+			// this doesn't work??
+			if (hand_one_cards[3].value > hand_two_cards[3].value) return Compare_Result.WIN;
+			if (hand_one_cards[3].value < hand_two_cards[3].value) return Compare_Result.LOSE;
+
+			return Compare_Result.TIE;
+		}
+		case Hand_Rank.STRAIGHT: {
+			if (hand_one_cards[0].value > hand_two_cards[0].value) return Compare_Result.WIN;
+			if (hand_one_cards[0].value < hand_two_cards[0].value) return Compare_Result.LOSE;
+			
+			return Compare_Result.TIE;
+		}
+		case Hand_Rank.FLUSH: {
+			if (hand_one_cards[0].value > hand_two_cards[0].value) return Compare_Result.WIN;
+			if (hand_one_cards[0].value < hand_two_cards[0].value) return Compare_Result.LOSE;
+			
+			return Compare_Result.TIE;
+		}
+		case Hand_Rank.FULL_HOUSE: {
 			if (hand_one_trips[0] > hand_two_trips[0]) return Compare_Result.WIN;
 			if (hand_one_trips[0] < hand_two_trips[0]) return Compare_Result.LOSE;
 			else {
@@ -655,7 +669,27 @@ export function compare_hands(ranked_hand_one: Ranked_Hand, ranked_hand_two: Ran
 
 			return Compare_Result.TIE;
 		}
-
+		case Hand_Rank.FOUR_OF_KIND: {
+			if (hand_one_cards[0].value > hand_two_cards[0].value) return Compare_Result.WIN;
+			if (hand_one_cards[0].value < hand_two_cards[0].value) return Compare_Result.LOSE;
+			
+			if (hand_one_cards[4].value > hand_two_cards[4].value) return Compare_Result.WIN;
+			if (hand_one_cards[4].value < hand_two_cards[4].value) return Compare_Result.LOSE;
+			
+			return Compare_Result.TIE;
+		}
+		case Hand_Rank.STRAIGHT_FLUSH: {
+			if (hand_one_cards[0].value > hand_two_cards[0].value) return Compare_Result.WIN;
+			if (hand_one_cards[0].value < hand_two_cards[0].value) return Compare_Result.LOSE;
+			
+			return Compare_Result.TIE;
+		}
+		case Hand_Rank.ROYAL_FLUSH: {
+			if (hand_one_cards[0].value > hand_two_cards[0].value) return Compare_Result.WIN;
+			else if (hand_one_cards[0].value < hand_two_cards[0].value) return Compare_Result.LOSE;
+			
+			return Compare_Result.TIE;
+		}
 	}
 
 	return Compare_Result.TIE;
@@ -760,8 +794,8 @@ function get_pairs_exact(hand: Card[]): number[] {
 function compare_hand_to_highest_ranked(highestRankedHand: Ranked_Hand, rankedHand: Ranked_Hand): Compare_Result {
 	let result: Compare_Result = Compare_Result.LOSE;
 	
-	find_five_best_cards(highestRankedHand.player)
-	find_five_best_cards(rankedHand.player);
+	find_five_best_cards(highestRankedHand)
+	find_five_best_cards(rankedHand);
 
 	if (rankedHand.rank > highestRankedHand.rank) {
 		result = Compare_Result.WIN;
