@@ -251,23 +251,46 @@ describe("Compare Ranked Hands", () => {
         player_one.hand = dev_deal_cards(deck, [
             {suit: Suit.CLUBS, type: Card_Type.THREE},
             {suit: Suit.SPADES, type: Card_Type.THREE},
-            {suit: Suit.SPADES, type: Card_Type.FOUR},
+            {suit: Suit.SPADES, type: Card_Type.NINE},
             {suit: Suit.HEARTS, type: Card_Type.NINE},
-            {suit: Suit.SPADES, type: Card_Type.NINE}
+            {suit: Suit.SPADES, type: Card_Type.QUEEN}
         ]);
 
         player_two.hand = dev_deal_cards(deck, [
-            {suit: Suit.CLUBS, type: Card_Type.FOUR},
             {suit: Suit.CLUBS, type: Card_Type.THREE},
-            {suit: Suit.SPADES, type: Card_Type.FOUR},
-            {suit: Suit.HEARTS, type: Card_Type.FIVE},
-            {suit: Suit.SPADES, type: Card_Type.THREE}
+            {suit: Suit.HEARTS, type: Card_Type.THREE},
+            {suit: Suit.SPADES, type: Card_Type.NINE},
+            {suit: Suit.HEARTS, type: Card_Type.NINE},
+            {suit: Suit.SPADES, type: Card_Type.KING}
         ]);
         
         const ranked_hand_one = rankHand(player_one, []);
         const ranked_hand_two = rankHand(player_two, []);
         const result: Compare_Result = compare_hands(ranked_hand_one, ranked_hand_two);
-        // console.log(result)
+        
+        expect(result).toBe(Compare_Result.LOSE);
+    })
+
+    test("Three of Kind v Three of Kind", () => {
+        player_one.hand = dev_deal_cards(deck, [
+            {suit: Suit.CLUBS, type: Card_Type.THREE},
+            {suit: Suit.SPADES, type: Card_Type.THREE},
+            {suit: Suit.DIAMONDS, type: Card_Type.THREE},
+            {suit: Suit.HEARTS, type: Card_Type.NINE},
+            {suit: Suit.SPADES, type: Card_Type.ACE}
+        ]);
+
+        player_two.hand = dev_deal_cards(deck, [
+            {suit: Suit.CLUBS, type: Card_Type.THREE},
+            {suit: Suit.HEARTS, type: Card_Type.THREE},
+            {suit: Suit.DIAMONDS, type: Card_Type.THREE},
+            {suit: Suit.HEARTS, type: Card_Type.NINE},
+            {suit: Suit.SPADES, type: Card_Type.KING}
+        ]);
+        
+        const ranked_hand_one = rankHand(player_one, []);
+        const ranked_hand_two = rankHand(player_two, []);
+        const result: Compare_Result = compare_hands(ranked_hand_one, ranked_hand_two);
         
         expect(result).toBe(Compare_Result.WIN);
     })

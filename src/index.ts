@@ -160,6 +160,7 @@ function addEventListeners() {
 function deal_new_hand() {
 	add_log_msg("Dealing new hand");
 	
+	game.deck = create_deck();
 	game.hand_winner = null;
 	game.community_cards = [];
 	game.current_hand.pot = 0;
@@ -629,11 +630,24 @@ export function compare_hands(ranked_hand_one: Ranked_Hand, ranked_hand_two: Ran
 			if (hand_one_pairs[1] > hand_two_pairs[1]) return Compare_Result.WIN;
 			if (hand_one_pairs[1] < hand_two_pairs[1]) return Compare_Result.LOSE;
 
-			// this doesn't work??
-			if (hand_one_cards[4].value > hand_two_cards[4].value) return Compare_Result.WIN;
-			if (hand_one_cards[4].value < hand_two_cards[4].value) return Compare_Result.LOSE;
+			// console.log("debug two pair v two pair", hand_one_cards, hand_two_cards)
 
-			return Compare_Result.TIE;
+			const hand_one_singles = get_singles(hand_one_cards);
+			const hand_two_singles = get_singles(hand_two_cards);
+
+			// console.log("hand one singles: ", hand_one_singles);
+			// console.log("hand two singles: ", hand_two_singles);
+
+			if (hand_one_singles[0].value > hand_two_singles[0].value) return Compare_Result.WIN;
+			if (hand_one_singles[0].value < hand_two_singles[0].value) return Compare_Result.LOSE;
+			
+			return Compare_Result.WIN;
+			
+			// // this doesn't work??
+			// if (hand_one_cards[4].value > hand_two_cards[4].value) return Compare_Result.WIN;
+			// if (hand_one_cards[4].value < hand_two_cards[4].value) return Compare_Result.LOSE;
+
+			// return Compare_Result.TIE;
 		}
 		case Hand_Rank.THREE_OF_KIND: {
 			// console.log(hand_one_cards, hand_two_cards)
@@ -641,11 +655,21 @@ export function compare_hands(ranked_hand_one: Ranked_Hand, ranked_hand_two: Ran
 			if (hand_one_trips[0] > hand_two_trips[0]) return Compare_Result.WIN;
 			if (hand_one_trips[0] < hand_two_trips[0]) return Compare_Result.LOSE;
 
-			// this doesn't work??
-			if (hand_one_cards[3].value > hand_two_cards[3].value) return Compare_Result.WIN;
-			if (hand_one_cards[3].value < hand_two_cards[3].value) return Compare_Result.LOSE;
+			const hand_one_singles = get_singles(hand_one_cards);
+			const hand_two_singles = get_singles(hand_two_cards);
+
+			if (hand_one_singles[0].value > hand_two_singles[0].value) return Compare_Result.WIN;
+			if (hand_one_singles[0].value < hand_two_singles[0].value) return Compare_Result.LOSE;
+			if (hand_one_singles[1].value > hand_two_singles[1].value) return Compare_Result.WIN;
+			if (hand_one_singles[1].value < hand_two_singles[1].value) return Compare_Result.LOSE;
 
 			return Compare_Result.TIE;
+
+			// // this doesn't work??
+			// if (hand_one_cards[3].value > hand_two_cards[3].value) return Compare_Result.WIN;
+			// if (hand_one_cards[3].value < hand_two_cards[3].value) return Compare_Result.LOSE;
+
+			// return Compare_Result.TIE;
 		}
 		case Hand_Rank.STRAIGHT: {
 			if (hand_one_cards[0].value > hand_two_cards[0].value) return Compare_Result.WIN;
@@ -916,6 +940,7 @@ function get_pairs_exact(hand: Card[]): number[] {
 // };
 
 export function find_hand_winner(_game: Game): Hand_Results {
+
 	let best_hand: Ranked_Hand = rankHand(_game.players[0], _game.community_cards); // do this to avoid unassigned var error, FIX??
 
 	const hand_result: Hand_Results = {
@@ -930,15 +955,19 @@ export function find_hand_winner(_game: Game): Hand_Results {
 		const current_ranked_hand = rankHand(player, _game.community_cards);
 		player.hand_rank = current_ranked_hand.rank;
 		player.final_hand_cards = current_ranked_hand.hand;
+
+		if (player.has_folded) {
+
+		} else {
+			const result: Compare_Result = compare_hands(current_ranked_hand, best_hand);
 		
-		// const compare_result: Compare_Result = compare_hand_to_highest_ranked(best_hand, current_ranked_hand);
-		// if (compare_result == Compare_Result.WIN) best_hand = current_ranked_hand;
-		const result: Compare_Result = compare_hands(current_ranked_hand, best_hand);
-		
-		// if the current hand wins
-		if (result == Compare_Result.WIN) {
-			best_hand = current_ranked_hand;
+			// if the current hand wins
+			if (result == Compare_Result.WIN) {
+				best_hand = current_ranked_hand;
+			}
 		}
+		
+		
 
 		// find_five_used_cards(player);
 		
@@ -1244,7 +1273,7 @@ export function rankHand(player: Player, community_cards: Card[]): Ranked_Hand  
 };
 
 function isRoyalFlush(hand: Card[]): boolean {
-	hand = sortCards(hand);
+	hand = sort_cards(hand);
 	hand = removeDuplicateValues(hand);
 
 	let hasRoyalFlush = false;
@@ -1314,7 +1343,7 @@ function isFlush(hand: Card[]): boolean {
 };
 
 function isStraight(hand: Card[]): boolean {
-	hand = sortCards(hand);
+	hand = sort_cards(hand);
 	hand = removeDuplicateValues(hand);
 
 	if (hand.length < 5) return false;
@@ -1395,7 +1424,7 @@ function findPairs(hand: Card[]): number[] {
 };
 
 
-function sortCards(hand: Card[]): Card[] {
+function sort_cards(hand: Card[]): Card[] {
 	return hand.sort(function (a, b) { return b.value - a.value }); // sort hand by card values, highest to lowest
 };
 
@@ -1456,7 +1485,7 @@ function get_three_of_kind_cards(hand: Card[]): Card[] | false {
 }
 
 function get_straight_cards(hand: Card[]): Card[] | false {
-	hand = sortCards(hand);
+	hand = sort_cards(hand);
 	hand = removeDuplicateValues(hand);
 
 	if (hand.length < 5) return false;
@@ -1583,7 +1612,7 @@ function get_straight_flush_cards(hand: Card[]): Card[] | false {
 	const cards: Cards_By_Suit = get_cards_by_suit(hand);
 
 	for (const [key, value] of Object.entries(cards)) {
-		if (value.length >= 5) return get_straight_cards(sortCards(value));
+		if (value.length >= 5) return get_straight_cards(sort_cards(value));
 	}
 
 	return false;
@@ -1600,7 +1629,7 @@ function get_royal_flush_cards(hand: Card[]): Card[] | false {
 // find the best five cards for each hand rank
 // each hand can start w/ five to seven cards
 // sort the cards by if their being used
-export function find_five_best_cards(ranked_hand: Ranked_Hand) {
+export function find_five_best_cards(ranked_hand: Ranked_Hand): Card[] {
 	console.assert(ranked_hand.hand.length >= 5, "Hand size is less than 5");
 	// console.log("starting find_five_used_cards");
 	// console.log("hand: ", player.hand);
@@ -1671,8 +1700,28 @@ export function find_five_best_cards(ranked_hand: Ranked_Hand) {
 			break;
 		}
 		case Hand_Rank.FULL_HOUSE: {
-			const full_house_cards: Card[] | false = get_full_house_cards(hand);
-			if (full_house_cards) best_cards.push(...full_house_cards);
+			const trips = get_trips(hand);
+			const pair = get_pairs_exact(hand);
+			
+			for (let card of hand) {
+				if (card.value == trips[0]) best_cards.push(card);
+			}
+
+			// sometimes in a full house hand there are two trips instead of a trip and a pair
+			if (trips.length == 2) {
+				for (let card of hand) {
+					if (card.value == trips[1] && best_cards.length < 5) best_cards.push(card);
+				}
+			} else {
+				for (let card of hand) {
+					if (card.value == pair[0]) best_cards.push(card);
+				}
+			}
+
+			
+
+			// const full_house_cards: Card[] | false = get_full_house_cards(hand);
+			// if (full_house_cards) best_cards.push(...full_house_cards);
 			break;
 		}
 		case Hand_Rank.FOUR_OF_KIND: {
@@ -1696,11 +1745,13 @@ export function find_five_best_cards(ranked_hand: Ranked_Hand) {
 
 	// console.log("best_cards: ", best_cards)
 	ranked_hand.player.best_cards = best_cards;
+
+	return best_cards;
 }
 
-function areWeTestingWithJest() {
-    return process.env.JEST_WORKER_ID !== undefined;
-}
+// function areWeTestingWithJest() {
+//     return process.env.JEST_WORKER_ID !== undefined;
+// }
 
 if (typeof jest !== 'undefined') {
 	console.log("jest")
@@ -1709,4 +1760,24 @@ if (typeof jest !== 'undefined') {
 		console.log("not jest")
 		init(); // start
 	});
+}
+
+function get_singles(cards: Card[]): Card[] {
+	const singles: Card[] = [];
+
+	for (const card of cards) {
+		let matches = 0;
+		for (const other_card of cards) {
+			if (card.value == other_card.value && card.id != other_card.id) {
+				matches++;
+			}
+		}
+		if (matches == 0) {
+			singles.push(card);
+		}
+	}
+	
+	sort_cards(singles);
+
+	return singles;
 }
