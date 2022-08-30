@@ -1,8 +1,3 @@
-// import { test_func } from './Deck';
-
-// test_func();
-
-// import { App, init_ui, render_ui } from "./UI"
 import { Suit, Card, Player, Game, Player_Type, Ranked_Hand, Hand_Rank, game, Card_Type, Hand_Phase, Hand_Results } from "./Game"
 import { Sim_Hand } from "./Sim_Hand";
 import { log, add_log_msg } from './Log';
@@ -19,9 +14,6 @@ interface Cards_By_Suit {
 	clubs: Card[];
 	diamonds: Card[];
 }
-
-
-
 
 
 export function create_deck(): Card[] {
@@ -92,66 +84,37 @@ function createPlayers(): Player[] {
 
 function init() {
 	addEventListeners();
+
 	game.deck = create_deck();
 	game.players = createPlayers();
 	game.human_player = game.players[0];
 
-	el(".deal_new_hand_button").addEventListener("click", deal_new_hand);
-
 	deal_new_hand();
 };
 
-// function increase_bet_handler(e: Event) {
-// 	console.log("increase bet handler");
-	
-// }
-
-// function decrease_bet_handler(e: Event) {
-// 	console.log("decrease bet handler");
-// }
-
 function addEventListeners() {
+	el(".deal_new_hand_button").addEventListener("click", deal_new_hand);
+
 	el(".check").addEventListener("click", () => {
 		end_turn(game.human_player, false);
 	});
 
-	// el(".bet_amount").addEventListener("keydown", bet_amount_keypress_handler);
-	// el(".bet_amount").addEventListener("input", );
-
-	// el(".increase_bet_button").addEventListener("click", increase_bet_handler);
-	// el(".decrease_bet_button").addEventListener("click", decrease_bet_handler);
-
-	// content editable onChange listener for human player bet ammount
-	// let elem: Element | null = document.querySelector('.bet_amount');
-	// if (elem) {
-	// 	elem.addEventListener('keypress', betInputHandler);
-	// }
-
-	const bet_amount = el(".bet_amount");
 	const bet_range_el: HTMLInputElement = el(".bet_range") as HTMLInputElement;
+	
 	bet_range_el.addEventListener("input", e => {
-		// console.log(e.value)
-		// bet_range_el.value = e.;
-		bet_amount.innerHTML = bet_range_el.value;
-		const call_btn_el = el(".call");
-		console.log(parseInt(bet_range_el.value));
-		console.log(game.current_hand.current_bet);
+		el(".bet_amount").innerHTML = bet_range_el.value;
 		if (parseInt(bet_range_el.value) == game.current_hand.current_bet) {
-			console.log("fuck")
-			call_btn_el.classList.remove("hide");
+			el(".call").classList.remove("hide");
 		} else {
-			call_btn_el.classList.add("hide");
+			el(".call").classList.add("hide");
 		}
 	});
 
 	el(".bet").addEventListener("click", () => {
-		console.log('bet');
 		humanBet();
-		
 	});
 
 	el(".call").addEventListener("click", () => {
-		console.log('call');
 		call_bet(game.human_player);
 		end_turn(game.human_player, false);
 	});
@@ -161,7 +124,7 @@ function deal_new_hand() {
 	add_log_msg("Dealing new hand");
 	
 	game.deck = create_deck();
-	game.hand_winner = null;
+	game.hand_winners = [];
 	game.community_cards = [];
 	game.current_hand.pot = 0;
 	game.hand_phase = Hand_Phase.PREFLOP;
@@ -274,7 +237,7 @@ function update_player_ui() {
 		amount_bet_el.innerHTML = player.amount_bet_this_round.toString();
 
 		for (let card of Array.from(cards_el.children)) {
-			if (game.hand_winner != null || player.id == 0) {
+			if (game.hand_winners.length > 0 || player.id == 0) {
 				if (player.has_folded) card.innerHTML = "";
 				else if (card.classList.contains("card1")) card.innerHTML = getCardImage(player.hand[0].value, player.hand[0].suit, false);
 				else if (card.classList.contains("card2")) card.innerHTML = getCardImage(player.hand[1].value, player.hand[1].suit, false);
@@ -941,11 +904,12 @@ function get_pairs_exact(hand: Card[]): number[] {
 
 export function find_hand_winner(_game: Game): Hand_Results {
 
-	let best_hand: Ranked_Hand = rankHand(_game.players[0], _game.community_cards); // do this to avoid unassigned var error, FIX??
+	// let best_hand: Ranked_Hand = rankHand(_game.players[0], _game.community_cards); // do this to avoid unassigned var error, FIX??
+
+	let best_hands: Ranked_Hand[] = [];
 
 	const hand_result: Hand_Results = {
-		// hand_ranks: [],
-		winner: null
+		winners: []
 	};
 
 	// get the hand ranks for each player
@@ -959,11 +923,17 @@ export function find_hand_winner(_game: Game): Hand_Results {
 		if (player.has_folded) {
 
 		} else {
-			const result: Compare_Result = compare_hands(current_ranked_hand, best_hand);
+			if (best_hands.length == 0) {
+				best_hands.push(current_ranked_hand);
+			} else {
+				const result: Compare_Result = compare_hands(current_ranked_hand, best_hands[0]);
 		
-			// if the current hand wins
-			if (result == Compare_Result.WIN) {
-				best_hand = current_ranked_hand;
+				if (result == Compare_Result.WIN) {
+					best_hands = [];
+					best_hands.push(current_ranked_hand);
+				} else if (result == Compare_Result.TIE) {
+					best_hands.push(current_ranked_hand);
+				}
 			}
 		}
 		
@@ -976,16 +946,40 @@ export function find_hand_winner(_game: Game): Hand_Results {
 		}
 	});
 
-	_game.hand_winner = best_hand.player;
-	hand_result.winner = best_hand.player;
+	if (best_hands.length > 1) {
+		for (let hand of best_hands) {
+			_game.hand_winners.push(hand.player);
+			hand_result.winners.push(hand.player);
+		}
 
-	if (!_game.is_sim_game) {
-		add_log_msg("Hand winner is " + _game.hand_winner.name);
-		let winnerElem: Element | null = document.querySelector(".winner");
-		if (winnerElem) {
-			winnerElem.innerHTML = best_hand.player.name + "wins the hand!";
-			// console.log(highestRankedHand);
-			_game.hand_winner.money += _game.current_hand.pot;
+		if (!_game.is_sim_game) {
+			let winners_str = "";
+			for (let player of _game.hand_winners) {
+				winners_str += ` ${player.name}`;
+			}
+			add_log_msg("Tie Between" + winners_str);
+			let winnerElem: Element | null = document.querySelector(".winner");
+			if (winnerElem) {
+				winnerElem.innerHTML = "Tie Between" + winners_str;
+
+				let winnings_per_player = _game.current_hand.pot / _game.hand_winners.length;
+				for (let player of _game.hand_winners) {
+					player.money += winnings_per_player;
+				}
+			}
+		}
+	} else {
+		_game.hand_winners.push(best_hands[0].player);
+		hand_result.winners.push(best_hands[0].player);
+
+		if (!_game.is_sim_game) {
+			add_log_msg("Hand winner is " + _game.hand_winners[0].name);
+			let winnerElem: Element | null = document.querySelector(".winner");
+			if (winnerElem) {
+				winnerElem.innerHTML = best_hands[0].player.name + "wins the hand!";
+				// console.log(highestRankedHand);
+				_game.hand_winners[0].money += _game.current_hand.pot;
+			}
 		}
 	}
 

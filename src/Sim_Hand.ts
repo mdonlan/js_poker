@@ -127,8 +127,10 @@ export class Sim_Hand {
 		const results = find_hand_winner(this.game);
 		// console.log("sim hand get winner results", results);
 		// console.log("winner = " + results.winner.name)
-		if (results.winner.id == this.player.id) {
-			this.wins++;
+		for (let _player of results.winners) {
+			if (_player.id == this.player.id) {
+				this.wins++;
+			}
 		}
 		this.run_count++;
 	};

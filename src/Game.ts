@@ -41,8 +41,7 @@ export interface Ranked_Hand {
 }
 
 export interface Hand_Results {
-	// hand_ranks: Ranked_Hand[];
-	winner: Player;
+	winners: Player[];
 }
 
 export interface Sim_Result {
@@ -124,11 +123,9 @@ export interface Game {
 	human_player: Player | null;
 	hand_phase: Hand_Phase;
 	round_current_player_index: number;
-	// round_start_player_index: number;
 	active_player: Player | null;
 	round_order: Player[];
-	hand_winner: Player | null;
-	// dealer_index: number;
+	hand_winners: Player[];
 	blinds: Blinds;
 	current_hand: Current_Hand;
 	is_sim_game: boolean;
@@ -143,7 +140,7 @@ export const game: Game = {
 	// round_start_player_index: 0,
 	round_order: [],
 	active_player: null,
-	hand_winner: null,
+	hand_winners: [],
 	// dealer_index: 0,
 	blinds: {small: 5, big: 10},
 	current_hand: {pot: 0, current_bet: 0, temp_player_bet: 0},
