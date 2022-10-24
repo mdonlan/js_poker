@@ -70,10 +70,7 @@ function createPlayers(): Player[] {
 	for (let i = 0; i < num_players; i++) {
 		let type = Player_Type.AI;
 
-		// set the first player created to be the human
-		if (i == 0) {
-			type = Player_Type.HUMAN;
-		}
+		if (i == 0) type = Player_Type.HUMAN;
 
 		let player: Player = create_player(i, type);
 		players.push(player);
@@ -141,9 +138,7 @@ function deal_new_hand() {
 	add_log_msg("Dealer is " + dealer.name);
 	add_log_msg(`Small blind is $${game.blinds.small} to ${small_blind.name}`);
 	add_log_msg(`Big blind is $${game.blinds.big} to ${big_blind.name}`);
-	// add_log_msg("Start the betting round with " + first_to_bet.name);
 
-	console.log("reseting players")
 	// reset each player
 	game.players.forEach(player => {
 		player.hand = <Card[]>[];
@@ -158,44 +153,13 @@ function deal_new_hand() {
 		clear_final_hand(player);
 	});
 	
-
 	el(".end_of_hand").classList.add("end_of_hand_hide");
-
-	// update_player_ui();
-
-	console.log(game.players)
-	
-
-	// let player: Player = {
-	// 	id: id,
-	// 	hand: [],
-	// 	money: 1000,
-	// 	name: "player" + id,
-	// 	type: type,
-	// 	round_bet: 0,
-	// 	hand_rank: Hand_Rank.UNRANKED,
-	// 	final_hand_cards: [],
-	// 	best_cards: [],
-	// 	highest_value_in_hand: 0,
-	// 	amount_bet_this_round: 0,
-	// 	has_folded: false
-	// }
 
 	blinds();
 
 	update_player_ui();
 	startBettingRound();
 };
-
-// DEV -- deal a specific hand for a player
-	// if (player.type == Player_Type.HUMAN) {
-	// 	player.hand.push(...dev_deal_cards(game.deck, [
-	// 		{suit: Suit.HEARTS, type: Card_Type.TWO},
-	// 		{suit: Suit.HEARTS, type: Card_Type.THREE},
-	// 		{suit: Suit.HEARTS, type: Card_Type.FOUR},
-	// 		{suit: Suit.HEARTS, type: Card_Type.FIVE},
-	// 		{suit: Suit.HEARTS, type: Card_Type.SIX}
-	// 	]));
 
 export function deal_card(deck: Card[]): Card {
 	let cardPosInDeck = Math.floor(Math.random() * game.deck.length);
@@ -232,7 +196,7 @@ function update_player_ui() {
 		let cards_el = child_el(player_el, ".cards");
 		let money_el = child_el(player_el, ".player_money");
 		let amount_bet_el = child_el(player_el, ".amount_bet");
-
+		
 		money_el.innerHTML = player.money.toString();
 		amount_bet_el.innerHTML = player.amount_bet_this_round.toString();
 
@@ -240,7 +204,7 @@ function update_player_ui() {
 			if (game.hand_winners.length > 0 || player.id == 0) {
 				if (player.has_folded) card.innerHTML = "";
 				else if (card.classList.contains("card1")) card.innerHTML = getCardImage(player.hand[0].value, player.hand[0].suit, false);
-				else if (card.classList.contains("card2")) card.innerHTML = getCardImage(player.hand[1].value, player.hand[1].suit, false);
+				else if (card.classList.contains("card2")) card.innerHTML = getCardImage(player.hand[1].value, player.hand[1].suit, false);		
 			} else {
 				if (player.has_folded) card.innerHTML = "";
 				else if (card.classList.contains("card1")) card.innerHTML = card_back();
@@ -264,7 +228,6 @@ export function getCardImage(card_value: number | string, suit: Suit, is_final_c
 	} else {
 		let image = "<img class='card_image' src='./assets/deck/" + imageName + "'>";
 		return image;
-		// elem.innerHTML = image;
 	}
 };
 
@@ -298,10 +261,8 @@ function dealCommunityCards(numToDeal: number) {
 };
 
 function startBettingRound() {
-	// createRoundOrder(0);
 	add_log_msg("Starting new betting round");
 	
-	// createRoundOrder(game.active_player.id)
 	game.round_current_player_index = 0;
 	game.active_player = game.round_order[game.round_current_player_index];
 	
@@ -315,10 +276,12 @@ function startBettingRound() {
 		});
 	}
 
-	
-
-	// add_log_msg("Active player is " + game.active_player.name);
 	updateCommunityCards(); // check if we need to deal out any community cards to start the round
+
+	// update the human player's current hand rank
+	let current_rank_el = document.querySelector(".player0").querySelector(".current_rank");
+	current_rank_el.innerHTML = Hand_Rank[rankHand(game.human_player, game.community_cards).rank];
+	
 	start_turn(game.active_player);
 };
 
@@ -340,8 +303,12 @@ function call_bet(player: Player): void {
 
 function place_bet(player: Player, amount: number) {
 	add_log_msg(`${player.name} places best of $${amount}`);
-	add_money_to_pot(player, amount);
-	game.current_hand.current_bet += amount;
+	// take into acount the amount already owed by the player
+	// add the total amount of bet to the pot, but only increase by difference between amount bet and amount the player already owes
+	add_money_to_pot(player, amount - player.amount_bet_this_round);
+	const amount_to_increase = amount - game.current_hand.current_bet; 
+	game.current_hand.current_bet += amount_to_increase;
+	setNewRoundOrderAfterBet(player);
 }
 
 function aiTurn(player: Player) {
@@ -349,13 +316,33 @@ function aiTurn(player: Player) {
 	setTimeout(() => {
 		let sim_hand: Sim_Hand = new Sim_Hand(game, player);
 		// console.log(sim_hand.results);
-		const win_percent = (sim_hand.results.wins / sim_hand.results.run_count * 100).toFixed();
+		const win_percent: number = (sim_hand.results.wins / sim_hand.results.run_count * 100);
+		console.log("win %: " + win_percent);
 		add_log_msg(`AI analysis: Win %: ${win_percent}`);
 
 		const amount_owed = game.current_hand.current_bet - player.amount_bet_this_round;
+		console.log('amount_owed: ' + amount_owed)
 
+		let percent_willing_to_bet = 0; // how much of their $ are they willing to bet
 
-		let should_raise_or_bet: boolean = false;
+		if (win_percent < 5) {
+			percent_willing_to_bet = .01;
+		} else if (win_percent < 10) {
+			percent_willing_to_bet = .05;
+		} else if (win_percent < 20) {
+			percent_willing_to_bet = .15;
+		} else if (win_percent < 40) {
+			percent_willing_to_bet = .2;
+		}  else if (win_percent < 60) {
+			percent_willing_to_bet = .3;
+		} else {
+			percent_willing_to_bet = 1;
+		}
+		
+		console.log("percent willing to bet: " + percent_willing_to_bet);
+		
+
+		// let should_raise_or_bet: boolean = false;
 
 		// figure out if the ai should either place a new bet or raise the current bet
 		// do this based on the ai hand strength and how much money they have?
@@ -365,20 +352,59 @@ function aiTurn(player: Player) {
 
 		
 		// if a bet is below 3% of players money then just call even with bad hand
-		const cheap_bet_amount = player.money * .03;
+		// const cheap_bet_amount = player.money * .03;
 
-		if (amount_owed < cheap_bet_amount) {
-			call_bet(player);
-			end_turn(player, false);
-		} else {
-			if (sim_hand.results.wins > 15) {
-				// add_log_msg(`${player.name} is calling`);
-				call_bet(player);
-				end_turn(player, false);
+		// if (amount_owed < cheap_bet_amount) {
+		// 	call_bet(player);
+		// 	end_turn(player, false);
+		// }
+		
+
+		const willing_to_bet = (player.money * percent_willing_to_bet) - player.amount_bet_this_round;
+		console.log('willing_to_bet: ' + willing_to_bet)
+
+		let wants_to_place_bet = false;
+		if (Math.floor(Math.random() * 100) > 50) {
+			wants_to_place_bet = true;
+		}
+
+		if (willing_to_bet - amount_owed < 50) {
+			wants_to_place_bet = false;
+		}
+
+		if (amount_owed < willing_to_bet) {
+			if (!wants_to_place_bet) {
+				if (amount_owed > 0) {
+					call_bet(player);
+					end_turn(player, false);
+				} else {
+					// check
+					end_turn(player, false);
+				}
 			} else {
-				add_log_msg("AI is folding");
-				fold(player);
+				const amount_to_bet = Math.floor(Math.random() * willing_to_bet);
+				if (amount_to_bet <= amount_owed) {
+					// if the ai is trying to bet but the amount is less than what they owe, just call instead
+					call_bet(player);
+					end_turn(player, false);
+				} else {
+					place_bet(player, amount_to_bet);
+					end_turn(player, false);
+				}
 			}
+		} else if (amount_owed > 0 && amount_owed > willing_to_bet) {
+			add_log_msg("AI is folding");
+			fold(player);
+		} else {
+			
+			
+			// if (sim_hand.results.wins > 15) {
+			// 	call_bet(player);
+			// 	end_turn(player, false);
+			// } else {
+			// 	add_log_msg("AI is folding");
+			// 	fold(player);
+			// }
 		}
 
 		
@@ -469,6 +495,7 @@ function findNextPlayer(): Player {
 };
 
 function start_turn(player: Player) {
+	console.log("starting turn for " + player.name);
 	if (player.has_folded) {
 		end_turn(player, false);
 	} else {
@@ -1186,6 +1213,7 @@ function setNewRoundOrderAfterBet(player: Player) {
 
 	game.round_current_player_index = 0;
 	game.active_player = game.round_order[game.round_current_player_index];
+	add_log_msg("Changed round order after bet. Start of round is " + game.round_order[game.round_current_player_index].name + ". End of round is" + game.round_order[game.round_order.length - 1].name);
 };
 
 function getPlayerRoundIndex(player: Player): number {
