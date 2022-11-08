@@ -129,6 +129,7 @@ export interface Game {
 	blinds: Blinds;
 	current_hand: Current_Hand;
 	is_sim_game: boolean;
+	dev_do_next_turn: boolean;
 }
 
 export const game: Game = {
@@ -145,5 +146,6 @@ export const game: Game = {
 	blinds: {small: 5, big: 10},
 	current_hand: {pot: 0, current_bet: 0, temp_player_bet: 0},
 	human_player: null,
-	is_sim_game: false
+	is_sim_game: false,
+	dev_do_next_turn: false
 };

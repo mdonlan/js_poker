@@ -80,6 +80,23 @@ function createPlayers(): Player[] {
 };
 
 function init() {
+
+	// game.dev_do_next_turn = true; // manually do each ai turn
+
+	if (game.dev_do_next_turn) {
+		const next_el = document.createElement("div");
+		next_el.innerHTML = "DO NEXT TURN";
+		next_el.className = "do_next_turn";
+		next_el.addEventListener("click", () => {
+			console.log("doing next turn")
+			if (game.active_player.id == 0) return;
+			start_turn(game.active_player, true);
+		});
+
+		const game_el = document.querySelector(".game");
+		game_el.appendChild(next_el);
+	}
+
 	addEventListeners();
 
 	game.deck = create_deck();
@@ -94,6 +111,11 @@ function addEventListeners() {
 
 	el(".check").addEventListener("click", () => {
 		end_turn(game.human_player, false);
+	});
+
+	el(".fold").addEventListener("click", () => {
+		fold(game.human_player);
+		// end_turn(game.human_player, false);
 	});
 
 	const bet_range_el: HTMLInputElement = el(".bet_range") as HTMLInputElement;
@@ -325,18 +347,36 @@ function aiTurn(player: Player) {
 
 		let percent_willing_to_bet = 0; // how much of their $ are they willing to bet
 
-		if (win_percent < 5) {
-			percent_willing_to_bet = .01;
-		} else if (win_percent < 10) {
-			percent_willing_to_bet = .05;
-		} else if (win_percent < 20) {
-			percent_willing_to_bet = .15;
-		} else if (win_percent < 40) {
-			percent_willing_to_bet = .2;
-		}  else if (win_percent < 60) {
-			percent_willing_to_bet = .3;
-		} else {
+		// if (win_percent < 5) {
+		// 	percent_willing_to_bet = .01;
+		// } else if (win_percent < 10) {
+		// 	percent_willing_to_bet = .03;
+		// } else if (win_percent < 20) {
+		// 	percent_willing_to_bet = .5;
+		// } else if (win_percent < 40) {
+		// 	percent_willing_to_bet = .10;
+		// }  else if (win_percent < 60) {
+		// 	percent_willing_to_bet = .3;
+		// } else {
+		// 	percent_willing_to_bet = 1;
+		// }
+
+		if (win_percent > 80) {
 			percent_willing_to_bet = 1;
+		} else if (win_percent > 60) {
+			percent_willing_to_bet = 0.5
+		} else if (win_percent > 50) {
+			percent_willing_to_bet = 0.4;
+		} else if (win_percent > 40) {
+			percent_willing_to_bet = 0.3
+		} else if (win_percent > 30) {
+			percent_willing_to_bet = 0.2
+		} else if (win_percent > 20) {
+			percent_willing_to_bet = 0.1
+		} else if (win_percent > 10) {
+			percent_willing_to_bet = 0.05
+		} else if (win_percent > 5) {
+			percent_willing_to_bet = 0.02
 		}
 		
 		console.log("percent willing to bet: " + percent_willing_to_bet);
@@ -372,7 +412,7 @@ function aiTurn(player: Player) {
 			wants_to_place_bet = false;
 		}
 
-		if (amount_owed < willing_to_bet) {
+		if (amount_owed <= willing_to_bet) {
 			if (!wants_to_place_bet) {
 				if (amount_owed > 0) {
 					call_bet(player);
@@ -382,7 +422,7 @@ function aiTurn(player: Player) {
 					end_turn(player, false);
 				}
 			} else {
-				const amount_to_bet = Math.floor(Math.random() * willing_to_bet);
+				const amount_to_bet = Math.floor(Math.random() * willing_to_bet) + game.blinds.big;
 				if (amount_to_bet <= amount_owed) {
 					// if the ai is trying to bet but the amount is less than what they owe, just call instead
 					call_bet(player);
@@ -396,7 +436,7 @@ function aiTurn(player: Player) {
 			add_log_msg("AI is folding");
 			fold(player);
 		} else {
-			
+			console.assert(false);
 			
 			// if (sim_hand.results.wins > 15) {
 			// 	call_bet(player);
@@ -413,24 +453,45 @@ function aiTurn(player: Player) {
 
 function humanTurn(player: Player) {
 	add_log_msg("Starting human player turn");
-	toggle_bet_options_el();
-	render_bet_options();
+	
+	if (player.has_folded) {
+		hide_bet_options();
+		end_turn(player, false);
+	} else {
+		show_bet_options();
+		render_bet_options();
+	}
 };
+
+function show_bet_options() {
+	el(".bet_options").classList.remove("bet_options_hide");
+}
+
+function hide_bet_options() {
+	el(".bet_options").classList.add("bet_options_hide");
+}
 
 function render_bet_options() {
 	// set the player bet/call element to show bet or call depending on if the roundBet is > 0
 	// also set the min bet ammount if it is call
+
+	// console.log("render_bet_options")
 
 	const bet_options_el = el(".bet_options");
 	if (game.current_hand.current_bet > 0) {
 		el(".check").classList.add("bet_button_hide");
 		el(".call").classList.remove("bet_button_hide");
 
-		el(".bet_amount").innerHTML = game.current_hand.current_bet.toString();
+		// el(".bet_amount").innerHTML = game.current_hand.current_bet.toString();
+		
 	} else {
 		el(".check").classList.remove("bet_button_hide");
 		el(".call").classList.add("bet_button_hide");
+		
 	}
+
+	const bet_amount = game.current_hand.current_bet - game.human_player.amount_bet_this_round;
+	el(".bet_amount").innerHTML = bet_amount.toString();
 
 	const bet_range_el = el(".bet_range") as HTMLInputElement;
 	bet_range_el.min = game.current_hand.current_bet.toString();
@@ -456,7 +517,7 @@ export function end_turn(player: Player, newBetHasBeenPlaced: boolean) {
 	}
 
 	if (player.type == Player_Type.HUMAN) {
-		toggle_bet_options_el();
+		hide_bet_options();
 	}
 
 	// if a new bet has been placed then reset the round order
@@ -494,7 +555,10 @@ function findNextPlayer(): Player {
 	return next_player;
 };
 
-function start_turn(player: Player) {
+function start_turn(player: Player, doing_next_turn: boolean = false) {
+	game.active_player = player;
+	if (game.dev_do_next_turn && !doing_next_turn && player.id != 0) return; // skip this if we are doing it manually
+
 	console.log("starting turn for " + player.name);
 	if (player.has_folded) {
 		end_turn(player, false);
@@ -1300,12 +1364,17 @@ function isRoyalFlush(hand: Card[]): boolean {
 
 	let hasRoyalFlush = false;
 	// check if hand has at least 5 cards
+	const suit: Suit = hand[0].suit;
 	if (hand.length >= 5) {
 		// check if highest card is an ace
 		if (hand[0].value == 14) {
 			if (hand[4].value == 10) {
 				return true;
 			}
+		}
+
+		for (let card of hand) {
+			if (card.suit != suit) return false;
 		}
 	}
 	return false;
