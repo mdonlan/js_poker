@@ -337,6 +337,7 @@
   function getCardImage(card_value, suit, is_final_cards) {
     let value = card_value > 10 ? Card_Type[card_value] : card_value;
     let imageName = value + "_of_" + Suit[suit] + ".svg";
+    imageName = imageName.toLowerCase();
     if (is_final_cards) {
       let image = "<img class='final_card_image' src='./assets/deck/" + imageName + "'>";
       return image;
