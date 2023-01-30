@@ -3,8 +3,10 @@
 // or fold they will call a new SimulateHand and pass in their cards, and any avaliable community cards
 // then they will sim the hand x times too see the outcomes
 
-import { Card, Game, Player, Sim_Result } from "./Game";
-import { create_deck, find_hand_winner } from ".";
+import { Game } from "./Game";
+import { find_hand_winner } from ".";
+import { create_deck } from "./Deck";
+import { Card, Player, Sim_Result } from "./types";
 
 export class Sim_Hand { 
 	// public hand: Card[];

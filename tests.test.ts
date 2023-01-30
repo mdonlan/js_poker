@@ -1,9 +1,13 @@
+
 /**
  * @jest-environment jsdom
  */
 
-import { create_deck, create_player, dev_deal_cards, Compare_Result, rankHand, compare_hands, find_five_best_cards } from "./src";
-import { game, Player, Player_Type, Card, Suit, Card_Type, Hand_Rank, Ranked_Hand } from "./src/Game"
+import {dev_deal_cards, rankHand } from "./src";
+import { game, create_player } from "./src/Game"
+import { Player, Player_Type, Card, Suit, Card_Type, Hand_Rank, Ranked_Hand } from './src/types'
+import { create_deck } from "./src/Deck";
+import { Compare_Result, compare_hands, find_five_best_cards } from './src/compare_hands';
 import 'jest-extended';
 // import * as matchers from 'jest-extended'
 // import { toBeOneOf } from 'jest-extended'

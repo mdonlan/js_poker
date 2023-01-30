@@ -1,120 +1,4 @@
-
-
-export enum Suit {
-	HEARTS,
-	SPADES,
-	CLUBS,
-	DIAMONDS
-}
-
-export interface Card {
-	value: Card_Type;
-	suit: Suit;
-	id: number;
-}
-
-export enum Player_Type {
-	AI,
-	HUMAN
-}
-
-export interface Player {
-	id: number; // formally -> 'num'
-	hand: Card[];
-	money: number;
-	name: string;
-	type: Player_Type;
-	// round_bet: number;
-	hand_rank: Hand_Rank;
-	final_hand_cards: Card[]; // all cards this player could use in their final hand, including community cards
-	best_cards: Card[]; // the five cards used out of the seven
-	highest_value_in_hand: number;
-	amount_bet_this_round: number;
-	has_folded: boolean;
-}
-
-export interface Ranked_Hand {
-	rank: Hand_Rank;
-	player: Player;
-	highest_value_in_hand: number;
-	hand: Card[];
-}
-
-export interface Hand_Results {
-	winners: Player[];
-}
-
-export interface Sim_Result {
-	wins: number;
-	run_count: number;
-}
-
-export enum Hand_Rank {
-	HIGH_CARD,
-	PAIR,
-	TWO_PAIR,
-	THREE_OF_KIND,
-	STRAIGHT,
-	FLUSH,
-	FULL_HOUSE,
-	FOUR_OF_KIND,
-	STRAIGHT_FLUSH,
-	ROYAL_FLUSH,
-	UNRANKED
-}
-
-export enum Card_Type {
-    TWO = 2,
-    THREE,
-    FOUR,
-    FIVE,
-    SIX,
-    SEVEN,
-    EIGHT,
-    NINE,
-    TEN,
-    JACK,
-    QUEEN,
-    KING,
-    ACE
-}
-
-export enum Hand_Phase {
-	PREFLOP,
-	FLOP,
-	TURN,
-	RIVER,
-	SHOWDOWN
-}
-
-
-// export interface Phase {
-// 	started: boolean;
-// 	in_progress: boolean,
-// 	betting_complete: false
-// }
-
-// export interface Hand_Status {
-// 	on_phase: Hand_Phase,
-// 	deal: Phase;
-// 	preflop: Phase;
-// 	flop: Phase,
-// 	turn: Phase,
-// 	river: Phase,
-// 	showdown: Phase
-// }
-
-interface Blinds {
-	small: number;
-	big: number;
-}
-
-interface Current_Hand {
-	pot: number;
-	current_bet: number;
-	temp_player_bet: number;
-}
-
+import { Card, Player, Hand_Phase, Player_Type, Hand_Rank } from "./types";
 
 export interface Game {
 	deck: Card[];
@@ -148,4 +32,38 @@ export const game: Game = {
 	human_player: null,
 	is_sim_game: false,
 	dev_do_next_turn: false
+};
+
+export function create_player(id: number, type: Player_Type): Player {
+	let player: Player = {
+		id: id,
+		hand: [],
+		money: 1000,
+		name: "player" + id,
+		type: type,
+		// round_bet: 0,
+		hand_rank: Hand_Rank.UNRANKED,
+		final_hand_cards: [],
+		best_cards: [],
+		highest_value_in_hand: 0,
+		amount_bet_this_round: 0,
+		has_folded: false
+	}
+
+	return player;
+}
+
+export function create_players(): Player[] {
+	let num_players: number = 6;
+	let players: Player[] = [];
+	for (let i = 0; i < num_players; i++) {
+		let type = Player_Type.AI;
+
+		if (i == 0) type = Player_Type.HUMAN;
+
+		let player: Player = create_player(i, type);
+		players.push(player);
+	}
+
+	return players;
 };

@@ -5,7 +5,7 @@
   "main": "main.js",
   "scripts": {
     "build_old": "nodemon --watch ./src esbuild.config.js && tsc",
-    "build": "nodemon --watch 'src/**/*' -e ts,tsx --exec 'node esbuild.config.js && tsc && http-server ./docs'",
+    "build": "nodemon --watch 'src/**/*' -e ts,tsx --exec 'node esbuild.config.js && http-server ./docs'",
     "test": "jest --silent=false"
   },
   "repository": {
